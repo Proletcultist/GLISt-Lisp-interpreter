@@ -1,3 +1,3 @@
 # GLISt - Great Lisp Interpreter Stable
 
-A LISP interpretere, thats all
+A LISP interpreter, that's all

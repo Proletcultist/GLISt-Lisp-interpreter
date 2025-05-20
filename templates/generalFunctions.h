@@ -1,0 +1,7 @@
+#define CONSTRUCT(type, ...) type##_construct(__VA_ARGS__)
+#define COPY_CONSTRUCT(type, ...) type##_copy_construct(__VA_ARGS__)
+#define MOVE_CONSTRUCT(type, ...) type##_move_construct(__VA_ARGS__)
+#define DESTRUCT(type, obj) type##_destruct(obj)
+#define COMPARE(type, l, r) type##_compare(l, r)
+#define PRINT(type, stream, obj) type##_print(stream, obj)
+#define METHOD(type, obj, meth, ...) type##_##meth(&obj __VA_OPT__(,) __VA_ARGS__)

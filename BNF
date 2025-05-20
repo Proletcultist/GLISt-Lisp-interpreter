@@ -1,0 +1,26 @@
+programm := (<expr><separator>?)+
+
+expr := <list> | <quote> <list> | <value> | <quote> <value>
+
+list := <open_parenthesis> <separator>? <list_content> <separator>? <close_parenthesis>
+
+list_content := e | <expr> | <expr> <separator> <list_content>
+
+value := <integer> | <string> | <symbol>
+
+Lexer ----------------------------------------------------
+
+integer := [1-9][0-9]*
+
+string := '"' [^"\n]* '"'
+
+symbol := [^0-9<separator><quote>"<open_parenthesis><close_parenthesis>][^<open_parenthesis><close_parenthesis><separator>]*
+
+separator := (' ' | '\n' | '\t')+
+
+quote := '''
+
+open_parenthesis = '('
+close_parenthesis = ')'
+
+EOF := EOF

@@ -4,6 +4,9 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
+#define isvaluetoken(t) (t.type == INT_TOKEN || t.type == STR_TOKEN || t.type == SYMBOL_TOKEN)
+#define isvaluetype(tt) (tt == INT_TOKEN || tt == STR_TOKEN || tt == SYMBOL_TOKEN)
+
 typedef enum token_type{
 	INT_TOKEN,
 	STR_TOKEN,

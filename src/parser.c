@@ -110,7 +110,7 @@ static node parseListContent(lexer l){
 
 	token_type tt;
 
-	if ((tt = METHOD(lexer, l, peekToken)) == QUOTE_TOKEN || tt == OPEN_PARENTHESIS_TOKEN || tt == INT_TOKEN || tt == STR_TOKEN || tt == SYMBOL_TOKEN){
+	if ((tt = METHOD(lexer, l, peekToken)) == QUOTE_TOKEN || tt == OPEN_PARENTHESIS_TOKEN || isvaluetype(tt)){
 		node next = parseExprToAST(l);
 		METHOD(node_vec, out.childs, push, next);
 
@@ -161,7 +161,7 @@ static node parseValue(lexer l){
 		out.value.nonterminal_val.type = UNFINISHED_NT;
 		return out;
 	}
-	else if (tt == INT_TOKEN || tt == STR_TOKEN || tt == SYMBOL_TOKEN){
+	else if (isvaluetype(tt)){
 		METHOD(node_vec, out.childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
 		if (iserror(METHOD(node_vec, out.childs, peek))){
 			out.value.nonterminal_val.type = ERROR_NT;

@@ -5,3 +5,4 @@
 #define COMPARE(type, l, r) type##_compare(l, r)
 #define PRINT(type, stream, obj) type##_print(stream, obj)
 #define METHOD(type, obj, meth, ...) type##_##meth(&obj __VA_OPT__(,) __VA_ARGS__)
+#define HASH(type, obj) type##_hash(obj)

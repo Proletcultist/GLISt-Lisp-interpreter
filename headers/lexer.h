@@ -44,6 +44,3 @@ token_type lexer_peekToken(lexer *l);
 // Returns ERROR_TOKEN, if unsuccessfull, prints to stderr info about error
 token lexer_getToken(lexer *l, token_type type);
 void lexer_destruct(lexer l);
-
-
-void freeToken(token t);

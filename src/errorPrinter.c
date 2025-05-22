@@ -34,7 +34,7 @@ static size_t_pair findErrorBounds(node AST){
 
 // Checks Leftmost token in the tree for start of print
 // Finds error token, its end is end of print and chars in this token printed red
-void printErrorAST(FILE *stream, node AST, FILE *src_stream){
+void printParseErrorAST(FILE *stream, node AST, FILE *src_stream){
 	size_t curr_pos = ftell(src_stream);
 
 	size_t start = findStartOfTree(AST);

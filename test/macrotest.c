@@ -3,9 +3,46 @@
 #include "lexer.h"
 #include "generalFunctions.h"
 #include "errorPrinter.h"
+#include "lispContext.h"
+#include "macroProcessor.h"
+
+node macrotest(void *ctx, node args){
+	node out;
+	out.type = NONTERMINAL_NODE;
+	out.value.nonterminal_val.type = EXPR_NT;
+	out.childs = CONSTRUCT(node_vec);
+
+	node out_value;
+	out_value.type = NONTERMINAL_NODE;
+	out_value.value.nonterminal_val.type = VALUE_NT;
+	out_value.childs = CONSTRUCT(node_vec);
+
+	node value_token;
+	value_token.type = TOKEN_NODE;
+	value_token.childs = CONSTRUCT(node_vec);
+	value_token.value.token_val.type = INT_TOKEN;
+	value_token.value.token_val.value.int_val = 128;
+	value_token.value.token_val.start = 0;
+	value_token.value.token_val.end = 0;
+	METHOD(node_vec, out_value.childs, push, value_token);
+
+	METHOD(node_vec, out.childs, push, out_value);
+
+	return out;
+}
 
 int main(){
-	char test[] = "(''fun 2 \"sasas\" (\n- 9 8\n)";
+
+
+	context global;
+	global.cMacros = CONSTRUCT(str_cMacro_map);
+
+	METHOD(str_cMacro_map, global.cMacros, set, "MACROTEST", macrotest);
+
+
+
+
+	char test[] = "(macrotest 2323 423)";
 
 	FILE *strstream = fmemopen(test, sizeof(test) - 1, "r");
 
@@ -17,6 +54,8 @@ int main(){
 		printParseErrorAST(stderr, out, strstream);
 		fputc('\n', stderr);
 	}
+
+	macroProcess(&global, &out);
 
 	node cursor = out;
 

@@ -197,9 +197,3 @@ token lexer_getToken(lexer *l, token_type type){
 }
 
 void lexer_destruct(lexer l){}
-
-void freeToken(token t){
-	if (t.type == STR_TOKEN || t.type == SYMBOL_TOKEN){
-		free(t.value.str_val);
-	}
-}

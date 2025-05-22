@@ -1,6 +1,6 @@
 programm := (<expr><separator>?)+
 
-expr := <list> | <quote> <list> | <value> | <quote> <value>
+expr := <list> | <value> | <quote> <list> | <quote> <value>
 
 list := <open_parenthesis> <separator>? <list_content> <separator>? <close_parenthesis>
 

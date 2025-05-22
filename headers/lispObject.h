@@ -1,57 +1,90 @@
 #pragma once
 
+#include <inttypes.h>
+#include <stdbool.h>
 #include "parser.h"
 
 typedef enum lispObject_type{
 	LIST_LISP,
 	INT_LISP,
 	STR_LISP,
-	SYMB_LISP
-}lispObkect_type;
+	SYMB_LISP,
+	ANON_LISP
+}lispObject_type;
 
-typedef struct lispList{
-}lispList;
+typedef struct lispObject{
+	lispObject_type type;
+	bool evalable;
+}lispObject;
+
+// derived from lispObject
 
 typedef struct lispInt{
+	lispObject_type type;
+	bool evalable;
+	int32_t value;
 }lispInt;
 
 typedef struct lispStr{
+	lispObject_type type;
+	bool evalable;
+	char *value;
 }lispStr;
 
 typedef struct lispSymb{
+	lispObject_type type;
+	bool evalable;
+	char *value;
 }lispSymb;
 
-typedef union lispObject_value{
-}lispObject_value;
+#define NAME symb_vec
+#define TYPE lispSymb
 
-typedef struct lispObject{
-}lispObject;
+#include "decl_vector.h"
+
+typedef lispObject *lispObject_p;
+
+#define NAME obj_p_vec
+#define TYPE lispObject_p
+
+#include "decl_vector.h"
+
+typedef struct lispAnonFunction{
+	lispObject_type type;
+	bool evalable;
+	symb_vec args;
+	lispObject *body;
+}lispAnonFunction;
+
+typedef struct lispList{
+	lispObject_type type;
+	bool evalable;
+	obj_p_vec list;
+}lispList;
 
 
 
 
 
 
-typedef enum function_type{
-	LISP_FUNCTION,
-	C_FUNCTION
-}function_type;
-
-typedef enum macro_type{
-	LISP_MACRO,
-	C_MACRO
-}macro_type;
 
 typedef struct lispFunction{
-	lispList args;
-	lispObject body;
+	symb_vec args;
+	lispObject *body;
+	// memo
+	bool dirty;
 }lispFunction;
 
 typedef struct lispMacro{
-	lispList args;
+	symb_vec args;
 	node body;
 }lispMacro;
 
-typedef lispObject (*cFunction)(/*env*/, lispList args);
+typedef struct cFunction{
+	lispObject* (*body)(void *ctx, lispList args);
+	bool dirty;
+}cFunction;
 
-typedef node (*cMacro)(/*env*/, node args);
+typedef node (*cMacro)(void *ctx, node args);
+
+void lispObject_destruct(lispObject *obj);

@@ -39,6 +39,9 @@ typedef struct node{
 
 int node_compare(node l, node r);
 
+void node_destruct(node n);
+void destruct_node_rec(node n);
+
 #define NAME node_vec
 #define TYPE node
 

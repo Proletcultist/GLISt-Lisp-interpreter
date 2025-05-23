@@ -9,7 +9,11 @@ typedef enum lispObject_type{
 	INT_LISP,
 	STR_LISP,
 	SYMB_LISP,
-	ANON_LISP
+	ANON_FUNC_LISP,
+	LFUNC_LISP,
+	CFUNC_LISP,
+	LMACRO_LISP,
+	CMACRO_LISP
 }lispObject_type;
 
 typedef struct lispObject{
@@ -49,42 +53,52 @@ typedef lispObject *lispObject_p;
 
 #include "decl_vector.h"
 
+typedef struct lispList{
+	lispObject_type type;
+	bool evalable;
+
+	obj_p_vec list;
+}lispList;
+
 typedef struct lispAnonFunction{
 	lispObject_type type;
 	bool evalable;
+
 	symb_vec args;
 	lispObject *body;
 }lispAnonFunction;
 
-typedef struct lispList{
+typedef struct lispLFunction{
 	lispObject_type type;
 	bool evalable;
-	obj_p_vec list;
-}lispList;
 
-
-
-
-
-
-
-typedef struct lispFunction{
 	symb_vec args;
 	lispObject *body;
-	// memo
 	bool dirty;
-}lispFunction;
+	// memo
+}lispLFunction;
 
-typedef struct lispMacro{
+typedef struct lispCFunction{
+	lispObject_type type;
+	bool evalable;
+
+	lispObject* (*body)(void *ctx, lispList *args);
+	bool dirty;
+}lispCFunction;
+
+typedef struct lispLMacro{
+	lispObject_type type;
+	bool evalable;
+
 	symb_vec args;
 	node body;
-}lispMacro;
+}lispLMacro;
 
-typedef struct cFunction{
-	lispObject* (*body)(void *ctx, lispList args);
-	bool dirty;
-}cFunction;
+typedef struct lispCMacro{
+	lispObject_type type;
+	bool evalable;
 
-typedef node (*cMacro)(void *ctx, node args);
+	node (*body)(void *ctx, node args);
+}lispCMacro;
 
 void lispObject_destruct(lispObject *obj);

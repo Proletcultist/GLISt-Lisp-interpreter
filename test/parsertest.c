@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include <inttypes.h>
 #include "parser.h"
 #include "lexer.h"
 #include "generalFunctions.h"
 #include "errorPrinter.h"
 
 int main(){
-	char test[] = "(''fun 2 \"sasas\" (\n- 9 8\n)";
+	char test[] = "(''fun 2 \"sasas (\n- 9 8\n))";
 
 	FILE *strstream = fmemopen(test, sizeof(test) - 1, "r");
 
@@ -14,17 +15,17 @@ int main(){
 	node out = parseExprToAST(l);
 	if (iserror(out)){
 		fputc('\n', stderr);
-		printParseErrorAST(stderr, out, strstream);
+		printParseErrorAST(stderr, &out, strstream);
 		fputc('\n', stderr);
 	}
 
-	node cursor = out;
+	node *cursor = &out;
 
 	while (1){
-		printf("%zu\n", cursor.childs.size);
-		for (size_t i = 0; i < cursor.childs.size; i++){
-			if (cursor.childs.arr[i].type == TOKEN_NODE){
-				switch (cursor.childs.arr[i].value.token_val.type){
+		printf("%zu\n", cursor->childs.size);
+		for (size_t i = 0; i < cursor->childs.size; i++){
+			if (cursor->childs.arr[i].type == TOKEN_NODE){
+				switch (cursor->childs.arr[i].value.token_val.type){
 					case INT_TOKEN:
 						printf("<int>");
 						break;
@@ -54,7 +55,7 @@ int main(){
 				}
 			}
 			else{
-				switch (cursor.childs.arr[i].value.nonterminal_val.type){
+				switch (cursor->childs.arr[i].value.nonterminal_val.type){
 					case EXPR_NT:
 						printf("[expr]");
 						break;
@@ -81,7 +82,8 @@ int main(){
 		size_t num;
 		scanf("%zu", &num);
 
-		cursor = cursor.childs.arr[num];
+		cursor = cursor->childs.arr + num;
+
 	}
 
 	return 0;

@@ -5,6 +5,15 @@
 void macroProcess(context *ctx, node *tree){
 	for (size_t i = 0; i < tree->childs.size; i++){
 		macroProcess(ctx, tree->childs.arr + i);
+		if (iserror(tree->childs.arr[i])){
+			if (istoken(*tree)){
+				tree->value.token_val.type = ERROR_TOKEN;
+			}
+			else{
+				tree->value.nonterminal_val.type = ERROR_NT;
+			}
+			return;
+		}
 	}
 
 	// Check if this node isnt expression with calling something (func or macro)
@@ -31,12 +40,17 @@ void macroProcess(context *ctx, node *tree){
 		return;
 	}
 
-	cMacro *this_cMacro = METHOD(str_cMacro_map, ctx->cMacros, get, this_symbol.value.str_val);
-	if (this_cMacro == NULL){
+	lispObject **try_find_macro = METHOD(context, *ctx, get, this_symbol.value.str_val);
+
+	if (try_find_macro == NULL){
 		return;
 	}
 
-	//TODO: Add lookup to lispMacro table
+	lispObject *this_macro = *try_find_macro;
+
+	if (this_macro->type != CMACRO_LISP && this_macro->type != LMACRO_LISP){
+		return;
+	}
 
 	node args;
 	if (this_list_c.childs.size != 3){
@@ -48,11 +62,23 @@ void macroProcess(context *ctx, node *tree){
 		args = this_list_c.childs.arr[2];
 	}
 
+	// Should be expression!!!
+	node processed;
 
+	if (this_macro->type == CMACRO_LISP){
+		processed = ((lispCMacro*)this_macro)->body(ctx, *tree);
+	}
+	else if (this_macro->type == LMACRO_LISP){
+		//TODO: Add processing of LMacro
+	}
 
-
-	node processed = (*this_cMacro)(ctx, args);
-
-	destruct_node_rec(*tree);
-	*tree = processed;
+	// Check processed for error
+	if (processed.value.nonterminal_val.type == ERROR_NT){
+		tree->value.nonterminal_val.type = ERROR_NT;
+		destruct_node_rec(processed);
+	}
+	else{
+		destruct_node_rec(*tree);
+		*tree = processed;
+	}
 }

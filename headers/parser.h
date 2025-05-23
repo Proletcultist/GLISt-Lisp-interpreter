@@ -1,7 +1,13 @@
+#pragma once
+
 #include "lexer.h"
 
-#define iserror(n) (n.type == TOKEN_NODE && n.value.token_val.type == ERROR_TOKEN || n.type == NONTERMINAL_NODE && n.value.nonterminal_val.type == ERROR_NT)
-#define isunfinished(n) (n.type == NONTERMINAL_NODE && n.value.nonterminal_val.type == UNFINISHED_NT)
+#define iserror(n) ((n).type == TOKEN_NODE && (n).value.token_val.type == ERROR_TOKEN || (n).type == NONTERMINAL_NODE && (n).value.nonterminal_val.type == ERROR_NT)
+
+#define isunfinished(n) ((n).type == NONTERMINAL_NODE && (n).value.nonterminal_val.type == UNFINISHED_NT)
+
+#define istoken(n) ((n).type == TOKEN_NODE)
+#define isnonterm(n) ((n).type == NONTERMINAL_NODE)
 
 typedef enum nonterminal_type{
 	PROGRAMM_NT,

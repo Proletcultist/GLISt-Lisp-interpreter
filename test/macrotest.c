@@ -6,7 +6,7 @@
 #include "lispContext.h"
 #include "macroProcessor.h"
 
-node macrotest(void *ctx, node args){
+node macrotest_func(void *ctx, node args){
 	node out;
 	out.type = NONTERMINAL_NODE;
 	out.value.nonterminal_val.type = EXPR_NT;
@@ -30,19 +30,27 @@ node macrotest(void *ctx, node args){
 
 	return out;
 }
+static lispCMacro macrotest = {CMACRO_LISP, false, macrotest_func};
+
+node errormacro_func(void *ctx, node args){
+	node out;
+	out.type = NONTERMINAL_NODE;
+	out.value.nonterminal_val.type = ERROR_NT;
+	out.childs = CONSTRUCT(node_vec);
+
+	return out;
+}
+static lispCMacro errormacro = {CMACRO_LISP, false, errormacro_func};
 
 int main(){
 
 
-	context global;
-	global.cMacros = CONSTRUCT(str_cMacro_map);
+	context global = CONSTRUCT(context);
 
-	METHOD(str_cMacro_map, global.cMacros, set, "MACROTEST", macrotest);
+	METHOD(context, global, set, "MACROTEST", (lispObject*)&macrotest);
+	METHOD(context, global, set, "ERRORMACRO", (lispObject*)&errormacro);
 
-
-
-
-	char test[] = "(macrotest 2323 423)";
+	char test[] = "(func (errormacro 24 ))";
 
 	FILE *strstream = fmemopen(test, sizeof(test) - 1, "r");
 
@@ -51,11 +59,16 @@ int main(){
 	node out = parseExprToAST(l);
 	if (iserror(out)){
 		fputc('\n', stderr);
-		printParseErrorAST(stderr, out, strstream);
+		printParseErrorAST(stderr, &out, strstream);
 		fputc('\n', stderr);
 	}
 
 	macroProcess(&global, &out);
+	if (iserror(out)){
+		fputc('\n', stderr);
+		printParseErrorAST(stderr, &out, strstream);
+		fputc('\n', stderr);
+	}
 
 	node cursor = out;
 

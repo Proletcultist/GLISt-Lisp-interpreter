@@ -2,27 +2,9 @@
 #include <inttypes.h>
 #include "lispContext.h"
 
-#define NAME str_lispFunc_map
+#define NAME context
 #define KEY_TYPE str
-#define VALUE_TYPE lispFunction
-
-#include "def_hashMap.h"
-
-#define NAME str_lispMacro_map
-#define KEY_TYPE str
-#define VALUE_TYPE lispMacro
-
-#include "def_hashMap.h"
-
-#define NAME str_cFunc_map
-#define KEY_TYPE str
-#define VALUE_TYPE cFunction
-
-#include "def_hashMap.h"
-
-#define NAME str_cMacro_map
-#define KEY_TYPE str
-#define VALUE_TYPE cMacro
+#define VALUE_TYPE lispObject_p
 
 #include "def_hashMap.h"
 

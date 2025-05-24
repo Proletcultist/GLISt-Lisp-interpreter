@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <memory.h>
+#include "generalFunctions.h"
 
 #ifndef _CONCAT
 	#define _CONCAT(a,b) a##b

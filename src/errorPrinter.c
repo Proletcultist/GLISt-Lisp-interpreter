@@ -18,14 +18,14 @@ static size_t_pair getNonterminalBounds(node *nt){
 	// Go to the leftmost leaf
 	node *cursor = nt;
 	while (cursor->childs.size != 0){
-		cursor = cursor->childs.arr + 0;
+		cursor = cursor->childs.arr[0];
 	}
 	out.first = cursor->value.token_val.start;
 
 	// Go to the rigtmost leaf
 	cursor = nt;
 	while (cursor->childs.size != 0){
-		cursor = cursor->childs.arr + (cursor->childs.size - 1);
+		cursor = cursor->childs.arr[cursor->childs.size - 1];
 	}
 	out.second = cursor->value.token_val.end;
 
@@ -39,8 +39,8 @@ static size_t_pair getErrorBounds(node *tree){
 		bool cont = false;
 
 		for (size_t i = 0; i < tree->childs.size; i++){
-			if (iserror(tree->childs.arr[i])){
-				tree = tree->childs.arr + i;
+			if (iserror(*tree->childs.arr[i])){
+				tree = tree->childs.arr[i];
 				cont = true;
 				break;
 			}

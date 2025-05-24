@@ -4,4 +4,4 @@
 #include "parser.h"
 
 // Macroprocess whole tree recursevely
-void macroProcess(context *ctx, node *tree);
+void macroProcess(context *ctx, node **tree);

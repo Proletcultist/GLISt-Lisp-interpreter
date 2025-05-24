@@ -15,6 +15,8 @@ typedef enum nonterminal_type{
 	LIST_NT,
 	LIST_CONTENT_NT,
 	VALUE_NT,
+	ANONFUNC_NT,
+	SYMBLIST_NT,
 	ERROR_NT,
 	UNFINISHED_NT
 }nonterminal_type;
@@ -37,20 +39,22 @@ typedef struct node{
 	node_type type;
 	node_value value;
 
-	struct node_vec{
-		struct node *arr;
+	struct node_p_vec{
+		struct node **arr;
 		size_t cap, size;
 	} childs;
 }node;
 
-int node_compare(node l, node r);
 
-void node_destruct(node n);
-void destruct_node_rec(node n);
+void node_destruct(node *n);
+void destruct_node_rec(node *n);
 
-#define NAME node_vec
-#define TYPE node
+typedef node *node_p;
+int node_p_compare(node *l, node *r);
+
+#define NAME node_p_vec
+#define TYPE node_p
 
 #include "decl_vector.h"
 
-node parseExprToAST(lexer l);
+node* parseExprToAST(lexer l);

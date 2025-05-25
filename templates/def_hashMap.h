@@ -1,9 +1,10 @@
 #include <stdlib.h>
+#include <memory.h>
 #include <inttypes.h>
 #include "hashmap_utils.h"
 #include "generalFunctions.h"
 
-#define INITIAL_HM_SIZE 29311 // Prime number
+#define INITIAL_HM_SIZE 113 // Prime number
 #define HM_EXTENSION 2
 #define MAX_HM_LOAD 90 // % 
 
@@ -68,7 +69,18 @@ NAME CONCAT(NAME, _construct)(){
 	return (NAME){NULL, 0, 0};
 }
 
+NAME CONCAT(NAME, _copy_construct)(NAME map){
+	NAME out;
+	out.arr = malloc(map.size * sizeof(CONCAT(NAME, _node)));
+	memcpy(out.arr, map.arr, map.size * sizeof(CONCAT(NAME, _node)));
+	out.size = map.size;
+	out.elems = map.elems;
+
+	return out;
+}
+
 void CONCAT(NAME, _destruct)(NAME self){
+	// TODO: Destruct all objects in map
 	if (self.size != 0){	
 		free(self.arr);
 		self.size = 0;

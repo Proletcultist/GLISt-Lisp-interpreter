@@ -2,35 +2,9 @@
 #include <inttypes.h>
 #include "lexer.h"
 #include "parser.h"
+#include "ASTtools.h"
 
 #define ERROR_MESSAGE_LIMIT 75
-
-// NOTE: All leafs should be tokens, it's obvious, but anyway
-
-typedef struct size_t_pair{
-	size_t first;
-	size_t second;
-}size_t_pair;
-
-static size_t_pair getNonterminalBounds(node *nt){
-	size_t_pair out;
-
-	// Go to the leftmost leaf
-	node *cursor = nt;
-	while (cursor->childs.size != 0){
-		cursor = cursor->childs.arr[0];
-	}
-	out.first = cursor->value.token_val.start;
-
-	// Go to the rigtmost leaf
-	cursor = nt;
-	while (cursor->childs.size != 0){
-		cursor = cursor->childs.arr[cursor->childs.size - 1];
-	}
-	out.second = cursor->value.token_val.end;
-
-	return out;
-}
 
 // Assumes, what tree is an error node
 static size_t_pair getErrorBounds(node *tree){

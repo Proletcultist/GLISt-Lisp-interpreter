@@ -37,6 +37,8 @@ typedef struct NAME{
 
 NAME CONCAT(NAME, _construct)();
 
+NAME CONCAT(NAME, _copy_construct)(NAME map);
+
 void CONCAT(NAME, _destruct)(NAME self);
 
 VALUE_TYPE* CONCAT(NAME, _get)(NAME *self, KEY_TYPE key);

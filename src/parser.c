@@ -38,6 +38,7 @@ static node* parseList(lexer l){
 	}
 	else if (tt == OPEN_PARENTHESIS_TOKEN){
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		if (iserror(*METHOD(node_p_vec, out->childs, peek))){
 			out->value.nonterminal_val.type = ERROR_NT;
 			return out;
@@ -45,6 +46,7 @@ static node* parseList(lexer l){
 
 		if (METHOD(lexer, l, peekToken) == SEP_TOKEN){
 			METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, SEP_TOKEN)));
+			METHOD(node_p_vec, out->childs, peek)->parent = out;
 			if (iserror(*METHOD(node_p_vec, out->childs, peek))){
 				out->value.nonterminal_val.type = ERROR_NT;
 				return out;
@@ -53,6 +55,7 @@ static node* parseList(lexer l){
 
 		node *next = parseListContent(l);
 		METHOD(node_p_vec, out->childs, push, next);
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 
 		if (iserror(*next)){
 			out->value.nonterminal_val.type = ERROR_NT;
@@ -66,6 +69,7 @@ static node* parseList(lexer l){
 	}
 	else{
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		out->childs.arr[out->childs.size - 1]->value.token_val.type = ERROR_TOKEN;
 		out->value.nonterminal_val.type = ERROR_NT;
 		fprintf(stderr, "[Parsing] \033[31mError\033[0m Expected '('\n");
@@ -75,6 +79,7 @@ static node* parseList(lexer l){
 
 	if (METHOD(lexer, l, peekToken) == SEP_TOKEN){
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, SEP_TOKEN)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		if (iserror(*METHOD(node_p_vec, out->childs, peek))){
 			out->value.nonterminal_val.type = ERROR_NT;
 			return out;
@@ -88,6 +93,7 @@ static node* parseList(lexer l){
 	}
 	else if (tt == CLOSE_PARENTHESIS_TOKEN){
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		if (iserror(*METHOD(node_p_vec, out->childs, peek))){
 			out->value.nonterminal_val.type = ERROR_NT;
 			return out;
@@ -95,6 +101,7 @@ static node* parseList(lexer l){
 	}
 	else{
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		out->childs.arr[out->childs.size - 1]->value.token_val.type = ERROR_TOKEN;
 		out->value.nonterminal_val.type = ERROR_NT;
 		fprintf(stderr, "[Parsing] \033[31mError\033[0m Expected ')'\n");
@@ -117,6 +124,7 @@ static node* parseListContent(lexer l){
 	if ((tt = METHOD(lexer, l, peekToken)) == QUOTE_TOKEN || tt == OPEN_PARENTHESIS_TOKEN || isvaluetype(tt)){
 		node *next = parseExpr(l);
 		METHOD(node_p_vec, out->childs, push, next);
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 
 		if (iserror(*next)){
 			out->value.nonterminal_val.type = ERROR_NT;
@@ -129,6 +137,7 @@ static node* parseListContent(lexer l){
 
 		if (METHOD(lexer, l, peekToken) == SEP_TOKEN){
 			METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, SEP_TOKEN)));
+			METHOD(node_p_vec, out->childs, peek)->parent = out;
 			if (iserror(*METHOD(node_p_vec, out->childs, peek))){
 				out->value.nonterminal_val.type = ERROR_NT;
 				return out;
@@ -137,6 +146,7 @@ static node* parseListContent(lexer l){
 
 			node *next = parseListContent(l);
 			METHOD(node_p_vec, out->childs, push, next);
+			METHOD(node_p_vec, out->childs, peek)->parent = out;
 
 			if (iserror(*next)){
 				out->value.nonterminal_val.type = ERROR_NT;
@@ -167,6 +177,7 @@ static node* parseValue(lexer l){
 	}
 	else if (isvaluetype(tt)){
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		if (iserror(*METHOD(node_p_vec, out->childs, peek))){
 			out->value.nonterminal_val.type = ERROR_NT;
 			return out;
@@ -174,6 +185,7 @@ static node* parseValue(lexer l){
 	}
 	else{
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		out->childs.arr[out->childs.size - 1]->value.token_val.type = ERROR_TOKEN;
 		out->value.nonterminal_val.type = ERROR_NT;
 		fprintf(stderr, "[Parsing] \033[31mError\033[0m Expected value\n");
@@ -200,6 +212,7 @@ static node* parseExpr(lexer l){
 
 	if (tt == QUOTE_TOKEN){
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, QUOTE_TOKEN)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		if (iserror(*METHOD(node_p_vec, out->childs, peek))){
 			out->value.nonterminal_val.type = ERROR_NT;
 			return out;
@@ -211,6 +224,7 @@ static node* parseExpr(lexer l){
 	}
 	else if (tt == ERROR_TOKEN){
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		out->value.nonterminal_val.type = ERROR_NT;
 		fprintf(stderr, "[Parsing] \033[31mError\033[0m Expected quote, list or value\n");
 
@@ -221,9 +235,11 @@ static node* parseExpr(lexer l){
 	tt = METHOD(lexer, l, peekToken);
 	if (tt == OPEN_PARENTHESIS_TOKEN){
 		METHOD(node_p_vec, out->childs, push, parseList(l));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 	}
 	else if (tt == ERROR_TOKEN){
 		METHOD(node_p_vec, out->childs, push, tokenToNode(METHOD(lexer, l, getToken, tt)));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 		out->value.nonterminal_val.type = ERROR_NT;
 		fprintf(stderr, "[Parsing] \033[31mError\033[0m Expected list or value\n");
 
@@ -231,6 +247,7 @@ static node* parseExpr(lexer l){
 	}
 	else{
 		METHOD(node_p_vec, out->childs, push, parseValue(l));
+		METHOD(node_p_vec, out->childs, peek)->parent = out;
 	}
 
 
@@ -246,7 +263,9 @@ static node* parseExpr(lexer l){
 }
 
 node* parseExprToAST(lexer l){
-	return parseExpr(l);
+	node *out = parseExpr(l);
+	out->parent = NULL;
+	return out;
 }
 
 void node_destruct(node *n){

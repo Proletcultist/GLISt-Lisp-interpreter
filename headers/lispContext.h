@@ -13,3 +13,6 @@ size_t str_hash(char *str);
 #define VALUE_TYPE lispObject_p
 
 #include "decl_hashMap.h"
+
+context* derive_context(context *ctx);
+void destructAllObjects(context *ctx);

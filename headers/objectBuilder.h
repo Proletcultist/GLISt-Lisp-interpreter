@@ -3,14 +3,10 @@
 #include "parser.h"
 #include "lispObject.h"
 
-lispObject* visitExpr();
+lispObject* visitExpr(node *src);
 
-lispObject* visitList();
+lispObject* visitList(node *src);
 
-void visitListContent(lispList *list);
+void visitListContent(node *src, lispList *list);
 
-lispObject* visitValue();
-
-lispObject* visitAnonFunc();
-
-void visitSymbList(symb_vec *symbols);
+lispObject* visitValue(node *src);

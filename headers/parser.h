@@ -43,6 +43,8 @@ typedef struct node{
 		struct node **arr;
 		size_t cap, size;
 	} childs;
+
+	struct node *parent;
 }node;
 
 

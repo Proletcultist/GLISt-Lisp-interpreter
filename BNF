@@ -8,12 +8,6 @@ list_content := e | <expr> | <expr> <separator> <list_content>
 
 value := <integer> | <string> | <symbol>
 
-Special nodes, produced by macros --------------------------------------------
-
-anonfunc := <symb_list> <expr>
-
-symb_list := e | <symbol> | <symbol> <symb_list>
-
 Lexer ------------------------------------------------------------------------
 
 integer := [1-9][0-9]*

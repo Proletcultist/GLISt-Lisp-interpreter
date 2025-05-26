@@ -1,2 +1,1 @@
-1. Destruct object when set it in context
-2. Destruct objects when context is destructed
+1. Add memo (dodelay lispObject_hash)

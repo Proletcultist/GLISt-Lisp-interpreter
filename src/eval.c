@@ -60,14 +60,14 @@ static lispObject* evalSymb(context *global, context *local, lispSymb *symbol){
 	lispObject **try_find;
 
 	if (local != NULL){
-		try_find = METHOD(context, *local, get, symbol->value);
+		try_find = METHOD(str_obj_p_map, local->map, get, symbol->value);
 
 		if (try_find != NULL){
 			return lispObject_copy_construct(*try_find);
 		}
 	}
 
-	try_find = METHOD(context, *global, get, symbol->value);
+	try_find = METHOD(str_obj_p_map, global->map, get, symbol->value);
 
 	if (try_find != NULL){
 		return lispObject_copy_construct(*try_find);
@@ -88,24 +88,58 @@ static lispObject* applyLFunction(context *global, context *local, lispLFunction
 
 	// TODO: Lookup to the memo
 	
-	// Binding arguments in function context
+	// Evaluating args
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
 	for (size_t i = 0; i < func->args.size; i++){
 		lispObject *buffer = eval(global, local, list->list.arr[i + 1]);
 		if (buffer->type == ERROR_LISP){
 			return &ERROR_OBJECT;
 		}
 
-		lispObject **old = METHOD(context, *((context*)func->ctx), get, func->args.arr[i].value);
-		if (old != NULL){
-			lispObject_destruct(*old);
-		}
-
-		METHOD(context, *((context*)func->ctx), set, func->args.arr[i].value, buffer);
+		METHOD(obj_p_vec, evaluated, push, buffer);
 	}
 
+	// Save previous bindings of args
+	obj_p_vec olds = CONSTRUCT(obj_p_vec);
+	for (size_t i = 0; i < func->args.size; i++){
+		lispObject **old = METHOD(str_obj_p_map, ((context*)func->ctx)->map, get, func->args.arr[i].value);
+		if (old == NULL){
+			METHOD(obj_p_vec, olds, push, NULL);
+		}
+		else{
+			METHOD(obj_p_vec, olds, push, *old);
+		}
+	}
+	
+	// Binding arguments in function context
+	for (size_t i = 0; i < func->args.size; i++){
+		METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
 	massSetSource(func->body, func->source);
+	lispObject *out = eval(global, (context*)func->ctx, func->body);
 
-	return eval(global, (context*)func->ctx, func->body);
+	// Return previous bindings
+	for (size_t i = 0; i < func->args.size; i++){
+		lispObject **buffer = METHOD(str_obj_p_map, ((context*)func->ctx)->map, get, func->args.arr[i].value);
+		if (buffer != NULL){
+			lispObject_destruct(*buffer);
+		}
+
+		if (olds.arr[i] != NULL){
+			METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, olds.arr[i]);
+		}
+		else{
+			METHOD(str_obj_p_map, ((context*)func->ctx)->map, remove, func->args.arr[i].value);
+		}
+	}
+	DESTRUCT(obj_p_vec, olds);
+
+	if (out->type == ERROR_LISP){
+		fprintf(stderr, "when evaluating function\n");
+	}
+
+	return out;
 }
 
 static lispObject* applyCFunction(context *global, context *local, lispCFunction *func, lispList *list){
@@ -120,22 +154,58 @@ static lispObject* applyAnonFunction(context *global, context *local, lispAnonFu
 		return &ERROR_OBJECT;
 	}
 
-	// Binding arguments in function context
+	// Evaluating args
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
 	for (size_t i = 0; i < func->args.size; i++){
 		lispObject *buffer = eval(global, local, list->list.arr[i + 1]);
 		if (buffer->type == ERROR_LISP){
 			return &ERROR_OBJECT;
 		}
 
-		lispObject **old = METHOD(context, *((context*)func->ctx), get, func->args.arr[i].value);
-		if (old != NULL){
-			lispObject_destruct(*old);
-		}
-
-		METHOD(context, *((context*)func->ctx), set, func->args.arr[i].value, buffer);
+		METHOD(obj_p_vec, evaluated, push, buffer);
 	}
 
-	return eval(global, (context*)func->ctx, func->body);
+	// Save previous bindings of args
+	obj_p_vec olds = CONSTRUCT(obj_p_vec);
+	for (size_t i = 0; i < func->args.size; i++){
+		lispObject **old = METHOD(str_obj_p_map, ((context*)func->ctx)->map, get, func->args.arr[i].value);
+		if (old == NULL){
+			METHOD(obj_p_vec, olds, push, NULL);
+		}
+		else{
+			METHOD(obj_p_vec, olds, push, *old);
+		}
+	}
+	
+	// Binding arguments in function context
+	for (size_t i = 0; i < func->args.size; i++){
+		METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+	massSetSource(func->body, func->source);
+	lispObject *out = eval(global, (context*)func->ctx, func->body);
+
+	// Return previous bindings
+	for (size_t i = 0; i < func->args.size; i++){
+		lispObject **buffer = METHOD(str_obj_p_map, ((context*)func->ctx)->map, get, func->args.arr[i].value);
+		if (buffer != NULL){
+			lispObject_destruct(*buffer);
+		}
+
+		if (olds.arr[i] != NULL){
+			METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, olds.arr[i]);
+		}
+		else{
+			METHOD(str_obj_p_map, ((context*)func->ctx)->map, remove, func->args.arr[i].value);
+		}
+	}
+	DESTRUCT(obj_p_vec, olds);
+
+	if (out->type == ERROR_LISP){
+		fprintf(stderr, "when evaluating function\n");
+	}
+
+	return out;
 }
 
 lispObject* eval(context *global, context *local, lispObject *obj){
@@ -155,6 +225,12 @@ lispObject* eval(context *global, context *local, lispObject *obj){
 	}
 	else if (obj->type == SYMB_LISP){
 		out = evalSymb(global, local, (lispSymb*)obj);
+	}
+	else if (obj->type == ERROR_LISP){
+		return &ERROR_OBJECT;
+	}
+	else{
+		return lispObject_copy_construct(obj);
 	}
 	
 	if (out->type == ERROR_LISP){

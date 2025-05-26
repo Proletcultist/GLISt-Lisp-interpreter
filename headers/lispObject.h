@@ -24,7 +24,10 @@ typedef struct lispObject{
 extern lispObject ERROR_OBJECT;
 
 typedef lispObject *lispObject_p;
+
+// Returns only 0 if equal and 1 otherwise
 int lispObject_p_compare(lispObject *l, lispObject *r);
+size_t lispObject_p_hash(lispObject *obj);
 
 #include "lispContext.h"
 

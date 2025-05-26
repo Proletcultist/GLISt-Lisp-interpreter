@@ -36,8 +36,7 @@ lispObject* add(void *global, void *local, lispList *args){
 }
 
 int main(){
-	context *global = malloc(sizeof(context));
-	*global = CONSTRUCT(context);
+	context *global = derive_context(NULL);
 
 // Add -------------------
 	lispCFunction *add_func = malloc(sizeof(lispCFunction));
@@ -47,7 +46,7 @@ int main(){
 
 	char *plus = malloc(2);
 	strcpy(plus, "+");
-	METHOD(context, *global, set, plus, (lispObject*)add_func);
+	METHOD(str_obj_p_map, global->map, set, plus, (lispObject*)add_func);
 // Func test -------------
 	lispLFunction *func = malloc(sizeof(lispLFunction));
 	func->type = LFUNC_LISP;
@@ -84,10 +83,10 @@ int main(){
 	char *func_name = malloc(5);
 	strcpy(func_name, "FUNC");
 
-	METHOD(context, *global, set, func_name, (lispObject*)func);
+	METHOD(str_obj_p_map, global->map, set, func_name, (lispObject*)func);
 // Test ------------------
 
-	char test[] = "(+ (func 2 3) (func 4 5))";
+	char test[] = "(func  (func 3 4) (func  6 4) )";
 
 	strstream = fmemopen(test, sizeof(test) - 1, "r");
 	l = CONSTRUCT(lexer, strstream, true);
@@ -115,9 +114,7 @@ int main(){
 	destruct_node_rec(out);
 	lispObject_destruct(generated);
 	lispObject_destruct(evaluated);
-	destructAllObjects(global);
-	DESTRUCT(context, *global);
-	free(global);
+	putContext(global);
 	fclose(strstream);
 
 	return 0;

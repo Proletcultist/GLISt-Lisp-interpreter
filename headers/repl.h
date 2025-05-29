@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdio.h>
+#include "lispContext.h"
+#include "libs.h"
+#include "main.h"
 
 int char_compare(char l, char r);
 
@@ -12,4 +15,4 @@ int char_compare(char l, char r);
 void addAutocomplete(char *str);
 void deleteAutocomplete(char *str);
 
-void repl(FILE *stream);
+void repl(FILE *stream, context *global, dl_vec *dls, str_vec libs, str_vec files);

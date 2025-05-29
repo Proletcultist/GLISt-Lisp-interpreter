@@ -17,3 +17,4 @@ lispObject* lookupToMemo(lispCFunction *func, obj_p_vec key);
 
 void addToMemo(lispCFunction *func, obj_p_vec key, lispObject *value);
 
+void loadLibAPI(char *name);

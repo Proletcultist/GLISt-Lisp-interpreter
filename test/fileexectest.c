@@ -1,4 +1,6 @@
-#include "repl.h"
+#include "fileExecutor.h"
+
+#define STD_LIB_NAME "GLIStSTD.so"
 
 int main(){
 	// Init global context
@@ -6,8 +8,10 @@ int main(){
 
 	// Init dls vector
 	dl_vec dls = CONSTRUCT(dl_vec);
+	// Load std lib
+	loadLib(&dls, global, STD_LIB_NAME);
 
-	repl(stdin, global, &dls);
+	executeFile(global, &dls, "test.lisp");
 
 	putContext(global);
 	unloadLibs(&dls);
@@ -15,4 +19,3 @@ int main(){
 
 	return 0;
 }
-

@@ -293,38 +293,3 @@ lispObject* eval(context *global, context *local, lispObject *obj){
 
 	return out;
 }
-
-bool check(context *global, context *local, lispObject *obj){
-	if (!obj->evalable){
-		return true;
-	}
-
-	if (obj->type == LIST_LISP){
-		if (!checkList(global, local, (lispList*)obj)){
-			return false;
-		}
-	}
-	else if (obj->type == INT_LISP){
-		return true;
-	}
-	else if (obj->type == STR_LISP){
-		return true;
-	}
-	else if (obj->type == SYMB_LISP){
-		if(!checkSymb(global, local, (lispSymb*)obj)){
-			return false;
-		}
-	}
-	else if (obj->type == ERROR_LISP){
-		return false;
-	}
-	else{
-		return true;
-	}
-	
-	if (out->type == ERROR_LISP){
-		return false;
-	}
-
-	return true;
-}

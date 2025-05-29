@@ -8,6 +8,8 @@
 #include "repl.h"
 #include "generalFunctions.h"
 #include "objectBuilder.h"
+#include "fileExecutor.h"
+#include "main.h"
 #include "iotools.h"
 #include "lexer.h"
 #include "errorPrinter.h"
@@ -27,7 +29,7 @@ int char_compare(char l, char r){ return 0; }
 
 // AUTOCOMPLETITION ------------------------------------
 
-static trie *autocomplete;
+static trie *autocomplete = NULL;
 
 void addAutocomplete(char *str);
 void deleteAutocomplete(char *str);
@@ -50,10 +52,16 @@ static void restoreTerminalSettings();
 // -----------------------------------------------------
 
 void addAutocomplete(char *str){
+	if (autocomplete == NULL){
+		return;
+	}
 	trie_add(autocomplete, str);
 }
 
 void deleteAutocomplete(char *str){
+	if (autocomplete == NULL){
+		return;
+	}
 	trie_delete(autocomplete, str);
 }
 
@@ -104,7 +112,7 @@ static void restoreTerminalSettings(){
 	tcsetattr(STDIN_FILENO, TCSANOW, &saved_settings);
 }
 
-void repl(FILE *stream){
+void repl(FILE *stream, context *global, dl_vec *dls, str_vec libs, str_vec files){
 
 	srand(time(NULL));
 	char *st[] = {"\033[4mSt\033[0mable", "\033[4mSt\033[0mrong", "\033[4mSt\033[0mepan", "\033[4mSt\033[0mandart", "\033[4mSt\033[0myled", "\033[4mSt\033[0mressed"};
@@ -120,19 +128,18 @@ void repl(FILE *stream){
 		fprintf(stdout, ")\n\n");
 	}
 
-
-	
-
 	// Init autocompletition trie
 	autocomplete = CONSTRUCT(trie);
 
-	// Init global context
-	context *global = derive_context(NULL);
-
-	// Init dls vector
-	dl_vec dls = CONSTRUCT(dl_vec);
 	// Load std lib
-	loadLib(&dls, global, STD_LIB_NAME);
+	loadLib(dls, global, STD_LIB_NAME);
+
+	for (size_t i = 0; i < libs.size; i++){
+		loadLib(dls, global, libs.arr[i]);
+	}
+	for (size_t i = 0; i < files.size; i++){
+		executeFile(global, dls, files.arr[i]);
+	}
 
 	// Init buffer for input
 	chars_vec input = CONSTRUCT(chars_vec);
@@ -252,6 +259,9 @@ revisit:
 				if (deleted == '\t'){
 					fprintf(stdout, BACKSPACE_TAB);
 				}
+				else if (deleted == '\n'){
+					METHOD(chars_vec, input, push, '\n');
+				}
 				else{
 					fprintf(stdout, "\b \b");
 				}
@@ -300,8 +310,6 @@ revisit:
 
 					destruct_node_rec(out);
 
-					// Clear input
-					input.size = 0;
 					break;
 				}
 
@@ -321,7 +329,6 @@ revisit:
 
 				lispObject_destruct(generated);
 				destruct_node_rec(out);
-				input.size = 0;
 
 				// Skip seps after expr
 				while (METHOD(lexer, l, peekToken) == SEP_TOKEN){
@@ -335,6 +342,7 @@ revisit:
 			}
 			else{
 				fprintf(stdout, "\n>>> ");
+				input.size = 0;
 			}
 
 		}
@@ -347,8 +355,5 @@ revisit:
 	fputc('\n', stdout);
 	restoreTerminalSettings();
 	trie_destruct(autocomplete);
-	putContext(global);
-	unloadLibs(&dls);
-	DESTRUCT(dl_vec, dls);
 	DESTRUCT(chars_vec, input);
 }

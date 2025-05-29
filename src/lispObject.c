@@ -208,7 +208,18 @@ lispObject* lispObject_borrow(lispObject *obj){
 
 void printObject(FILE *stream, lispObject *obj){
 	if (obj->type == LIST_LISP){
-		fprintf(stream, "<LIST>");
+		fprintf(stream, "(");
+
+		if (((lispList*)obj)->list.size != 0){
+			printObject(stream, ((lispList*)obj)->list.arr[0]);
+		}
+
+		for (size_t i = 1; i < ((lispList*)obj)->list.size; i++){
+			fprintf(stream, " ");
+			printObject(stream, ((lispList*)obj)->list.arr[i]);
+		}
+
+		fprintf(stream, ")");
 	}
 	else if (obj->type == INT_LISP){
 		fprintf(stream, "%"PRId32, ((lispInt*)obj)->value);

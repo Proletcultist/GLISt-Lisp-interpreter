@@ -51,6 +51,8 @@ context* derive_context(context *ctx){
 	for (size_t i = 0; i < derived->map.size; i++){
 		if (derived->map.arr[i].type == VALUE_NODE){
 			derived->map.arr[i].value = lispObject_borrow(derived->map.arr[i].value);
+			derived->map.arr[i].key = malloc(strlen(derived->map.arr[i].key) + 1);
+			strcpy(derived->map.arr[i].key, ctx->map.arr[i].key);
 		}
 	}
 

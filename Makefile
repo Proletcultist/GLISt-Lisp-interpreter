@@ -1,20 +1,42 @@
 
-BIN_DIR = ./bin
 SRC_DIR = ./src
-TEST_DIR = ./test
+LIBS_SRC_DIR = $(SRC_DIR)/libs
 
-LIBS_DIR = /usr/lib
+OBJECT_FILES_DIR = ./objects
 
-C_FLAGS = -g -I ./headers -I ./templates -rdynamic -Wl,-rpath=$(LIBS_DIR) -ldl
+BIN_DIR = ./bin
+LIBS_DIR = $(BIN_DIR)/libs
 
+LIBS_INSTALL_DIR = /usr/lib
+BIN_INSTALL_DIR = /usr/bin
+
+C_FLAGS = -I ./headers -I ./templates
+LINK_FLAGS = -rdynamic -Wl,-rpath=$(LIBS_DIR) -ldl
 C_SO_FLAGS = -I ./headers -I ./templates -shared -fPIC
 
-repl: $(BIN_DIR)/repl
-std: $(LIBS_DIR)/GLIStSTD.so
+all: libraries main
+libraries: $(addprefix $(LIBS_DIR)/, $(patsubst %.c, %.so, $(notdir $(wildcard $(LIBS_SRC_DIR)/*.c))))
+main: $(BIN_DIR)/main
 
-$(BIN_DIR)/repl: $(TEST_DIR)/repltest.c $(filter-out $(SRC_DIR)/std.c, $(wildcard $(SRC_DIR)/*))
-	gcc $(C_FLAGS) -o $@ $^
+$(BIN_DIR)/main: $(addprefix $(OBJECT_FILES_DIR)/, $(patsubst %.c, %.o, $(notdir $(wildcard $(SRC_DIR)/*.c)))) | $(BIN_DIR)
+	gcc $(LINK_FLAGS) -o $@ $^
 
-
-$(LIBS_DIR)/GLIStSTD.so: $(SRC_DIR)/std.c
+$(LIBS_DIR)/%.so: $(LIBS_SRC_DIR)/%.c | $(LIBS_DIR)
 	gcc $(C_SO_FLAGS) -o $@ $^
+
+$(OBJECT_FILES_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJECT_FILES_DIR)
+	gcc -c $(C_FLAGS) -o $@ $^
+
+clean:
+	rm $(LIBS_DIR)/*
+	rm -d $(BIN_DIR)/*
+	rm $(OBJECT_FILES_DIR)/*
+
+$(BIN_DIR):
+	mkdir -p $@
+
+$(LIBS_DIR):
+	mkdir -p $@
+
+$(OBJECT_FILES_DIR):
+	mkdir -p $@

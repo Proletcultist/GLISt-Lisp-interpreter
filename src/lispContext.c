@@ -50,11 +50,16 @@ context* derive_context(context *ctx){
 
 	for (size_t i = 0; i < derived->map.size; i++){
 		if (derived->map.arr[i].type == VALUE_NODE){
-			derived->map.arr[i].value = lispObject_copy_construct(derived->map.arr[i].value);
+			derived->map.arr[i].value = lispObject_borrow(derived->map.arr[i].value);
 		}
 	}
 
 	return derived;
+}
+
+context* borrow_context(context *ctx){
+	ctx->ref_count++;
+	return ctx;
 }
 
 static void destructAllObjects(context *ctx){

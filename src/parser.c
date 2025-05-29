@@ -198,11 +198,6 @@ static node* parseValue(lexer l){
 
 static node* parseExpr(lexer l){
 
-	// Skip any leading seps
-	while (METHOD(lexer, l, peekToken) == SEP_TOKEN){
-		METHOD(lexer, l, getToken, SEP_TOKEN);
-	}
-
 	node *out = malloc(sizeof(node));
 	out->type = NONTERMINAL_NODE;
 	out->value.nonterminal_val.type = EXPR_NT;

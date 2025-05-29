@@ -21,4 +21,5 @@ typedef struct context{
 
 context *context_construct();
 context* derive_context(context *ctx);
+context* borrow_context(context *ctx);
 void putContext(context *ctx);

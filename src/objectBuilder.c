@@ -34,6 +34,7 @@ lispObject* visitExpr(node *src){
 lispObject* visitList(node *src){
 	lispList *out = malloc(sizeof(lispList));
 	out->type = LIST_LISP;
+	out->ref_counter = 1;
 	// Evalable and source will be set by expr visitor, called this
 
 	out->list = CONSTRUCT(obj_p_vec);
@@ -65,6 +66,7 @@ lispObject* visitValue(node *src){
 
 	if (t.type == INT_TOKEN){
 		lispInt *out = malloc(sizeof(lispInt));
+		out->ref_counter = 1;
 		out->type = INT_LISP;
 		// Evalable and source will be set by expr visitor, called this
 		out->value = t.value.int_val;
@@ -74,6 +76,7 @@ lispObject* visitValue(node *src){
 	else if (t.type == STR_TOKEN){
 		lispStr *out = malloc(sizeof(lispStr));
 		out->type = STR_LISP;
+		out->ref_counter = 1;
 		// Evalable and source will be set by expr visitor, called this
 		out->value = malloc(strlen(t.value.str_val) + 1);
 		strcpy(out->value, t.value.str_val);
@@ -83,6 +86,7 @@ lispObject* visitValue(node *src){
 	else if (t.type == SYMBOL_TOKEN){
 		lispSymb *out = malloc(sizeof(lispSymb));
 		out->type = SYMB_LISP;
+		out->ref_counter = 1;
 		// Evalable and source will be set by expr visitor, called this
 		out->value = malloc(strlen(t.value.str_val) + 1);
 		strcpy(out->value, t.value.str_val);

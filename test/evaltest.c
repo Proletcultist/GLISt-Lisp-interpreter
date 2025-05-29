@@ -9,9 +9,11 @@
 #include "lispObject.h"
 #include "eval.h"
 #include "objectBuilder.h"
+#include "memo.h"
 
 lispObject* add(void *global, void *local, lispList *args){
 	lispInt *out = malloc(sizeof(lispInt));
+	out->ref_counter = 1;
 	out->type = INT_LISP;
 	out->evalable = false;
 	out->value = 0;
@@ -40,18 +42,27 @@ int main(){
 
 // Add -------------------
 	lispCFunction *add_func = malloc(sizeof(lispCFunction));
+	add_func->ref_counter = 1;
 	add_func->type = CFUNC_LISP;
 	add_func->evalable = false;
 	add_func->body = add;
+	add_func->memoiz = malloc(sizeof(memo));
+	*(memo*)add_func->memoiz = CONSTRUCT(memo);
+	add_func->dirty = false;
 
 	char *plus = malloc(2);
 	strcpy(plus, "+");
 	METHOD(str_obj_p_map, global->map, set, plus, (lispObject*)add_func);
 // Func test -------------
 	lispLFunction *func = malloc(sizeof(lispLFunction));
+	func->ref_counter = 1;
 	func->type = LFUNC_LISP;
 	func->evalable = false;
 	func->args = CONSTRUCT(symb_vec);
+
+	func->memoiz = malloc(sizeof(memo));
+	*(memo*)func->memoiz = CONSTRUCT(memo);
+	func->dirty = false;
 
 	char funcBody[] = "(+ a b)";
 	FILE *strstream = fmemopen(funcBody, sizeof(funcBody) - 1, "r");
@@ -86,7 +97,7 @@ int main(){
 	METHOD(str_obj_p_map, global->map, set, func_name, (lispObject*)func);
 // Test ------------------
 
-	char test[] = "(func  (func 3 4) (func  6 4) )";
+	char test[] = "(+ (+ 3  4)   ( + 3 4 ))";
 
 	strstream = fmemopen(test, sizeof(test) - 1, "r");
 	l = CONSTRUCT(lexer, strstream, true);

@@ -1,1 +1,11 @@
-1. Add memo (dodelay lispObject_hash)
+3. Dodelat =
+4. Add list ops
+5. Add lambda
+6. Add let
+
+
+
+RULES
+
+1. DONT change lisp objects under pointers (DO it only if this object is allocated in this function and you build it)
+2. If you need to change some value in context, create NEW object with modified value and BIND it instead of previous one.

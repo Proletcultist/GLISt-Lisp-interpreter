@@ -19,6 +19,17 @@ lexer lexer_construct(FILE *stream, bool setposes){
 token_type lexer_peekToken(lexer *l){
 	int input = fpeek(l->stream);
 
+	if (input == '-'){
+
+		fgetc(l->stream);
+		int input2 = fpeek(l->stream);
+		ungetc('-', l->stream);
+
+		if (isdigit(input2)){
+			return INT_TOKEN;
+		}
+	}
+
 	if (isdigit(input)){
 		return INT_TOKEN;
 	}
@@ -55,8 +66,15 @@ static token readIntToken(FILE *stream, bool setposes){
 	out.start = 0;
 	out.end = 0;
 
+	int32_t modifier = 1;
+
 	if (setposes){
 		out.start = ftell(stream);
+	}
+
+	if (fpeek(stream) == '-'){
+		modifier = -1;
+		fgetc(stream);
 	}
 
 	while (isdigit(fpeek(stream))){
@@ -67,6 +85,8 @@ static token readIntToken(FILE *stream, bool setposes){
 	if (setposes){
 		out.end = ftell(stream);
 	}
+
+	out.value.int_val *= modifier;
 
 	return out;
 }

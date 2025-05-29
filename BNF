@@ -1,4 +1,4 @@
-programm := (<expr><separator>?)+
+programm := <separator>? (<expr><separator>?)+
 
 expr := <list> | <value> | <quote> <list> | <quote> <value>
 
@@ -10,7 +10,7 @@ value := <integer> | <string> | <symbol>
 
 Lexer ------------------------------------------------------------------------
 
-integer := [1-9][0-9]*
+integer := '-'? [0-9]*
 
 string := '"' [^"\n]* '"'
 

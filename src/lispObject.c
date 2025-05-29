@@ -97,6 +97,14 @@ static void lispObject_p_hash_inner(lispObject *obj, size_t *out){
 	}
 }
 
+size_t obj_p_vec_hash(obj_p_vec vec){
+	size_t out = 0;
+	for (size_t i = 0; i < vec.size; i++){
+		lispObject_p_hash_inner(vec.arr[i], &out);
+	}
+	return out;
+}
+
 size_t lispObject_p_hash(lispObject *obj){
 	size_t out = 0;
 	lispObject_p_hash_inner(obj, &out);
@@ -110,6 +118,7 @@ size_t lispObject_p_hash(lispObject *obj){
 
 lispObject ERROR_OBJECT = {ERROR_LISP, false, NULL};
 
+/*
 lispObject* lispObject_copy_construct(lispObject *obj){
 	if (obj->type == LIST_LISP){
 		lispList *out = malloc(sizeof(lispList));
@@ -120,11 +129,13 @@ lispObject* lispObject_copy_construct(lispObject *obj){
 			out->list.arr[i] = lispObject_copy_construct(out->list.arr[i]);
 		}
 
+		out->ref_counter = 1;
 		return (lispObject*)out;
 	}
 	else if (obj->type == INT_LISP){
 		lispInt *out = malloc(sizeof(lispInt));
 		memcpy(out, obj, sizeof(lispInt));
+		out->ref_counter = 1;
 		return (lispObject*)out;
 	}
 	else if (obj->type == STR_LISP){
@@ -133,6 +144,7 @@ lispObject* lispObject_copy_construct(lispObject *obj){
 
 		out->value = malloc(strlen(((lispStr*)obj)->value) + 1);
 		strcpy(out->value, ((lispStr*)obj)->value);
+		out->ref_counter = 1;
 		return (lispObject*)out;
 	}
 	else if (obj->type == SYMB_LISP){
@@ -141,6 +153,7 @@ lispObject* lispObject_copy_construct(lispObject *obj){
 
 		out->value = malloc(strlen(((lispSymb*)obj)->value) + 1);
 		strcpy(out->value, ((lispSymb*)obj)->value);
+		out->ref_counter = 1;
 		return (lispObject*)out;
 	}
 	else if (obj->type == ANON_FUNC_LISP){
@@ -156,6 +169,7 @@ lispObject* lispObject_copy_construct(lispObject *obj){
 			strcpy(out->args.arr[i].value, buffer);
 		}
 
+		out->ref_counter = 1;
 		return (lispObject*)out;
 	}
 	else if (obj->type == LFUNC_LISP){
@@ -171,14 +185,25 @@ lispObject* lispObject_copy_construct(lispObject *obj){
 			strcpy(out->args.arr[i].value, buffer);
 		}
 
+		out->ref_counter = 1;
 		return (lispObject*)out;
 	}
 	else if (obj->type == CFUNC_LISP){
 		lispCFunction *out = malloc(sizeof(lispCFunction));
 		memcpy(out, obj, sizeof(lispCFunction));
 
+		out->ref_counter = 1;
 		return (lispObject*)out;
 	}
+	else if (obj->type == ERROR_LISP){
+		return obj;
+	}
+}
+*/
+
+lispObject* lispObject_borrow(lispObject *obj){
+	obj->ref_counter++;
+	return obj;
 }
 
 void printObject(FILE *stream, lispObject *obj){
@@ -209,6 +234,12 @@ void printObject(FILE *stream, lispObject *obj){
 }
 
 void lispObject_destruct(lispObject *obj){
+
+	obj->ref_counter--;
+	if (obj->ref_counter != 0){
+		return;
+	}
+
 	if (obj->type == LIST_LISP){
 		for (size_t i = 0; i < ((lispList*)obj)->list.size; i++){
 			lispObject_destruct(((lispList*)obj)->list.arr[i]);
@@ -243,9 +274,11 @@ void lispObject_destruct(lispObject *obj){
 		DESTRUCT(symb_vec, ((lispLFunction*)obj)->args);
 		putContext((context*)((lispLFunction*)obj)->ctx);
 		lispObject_destruct(((lispLFunction*)obj)->body);
+		memo_p_destruct(((lispLFunction*)obj)->memoiz);
 		free(obj);
 	}
 	else if (obj->type == CFUNC_LISP){
+		memo_p_destruct(((lispCFunction*)obj)->memoiz);
 		free(obj);
 	}
 	else if (obj->type == ERROR_LISP){

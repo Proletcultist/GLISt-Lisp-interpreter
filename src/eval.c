@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "eval.h"
 #include "lispContext.h"
 #include "lispObject.h"
@@ -26,7 +27,9 @@ static lispObject* evalList(context *global, context *local, lispList *list){
 		lispSymb *out = malloc(sizeof(lispSymb));
 		out->type = SYMB_LISP;
 		out->evalable = false;
-		out->value = "NIL";
+		out->ref_counter = 1;
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
 		return (lispObject*)out;
 	}
 
@@ -63,14 +66,14 @@ static lispObject* evalSymb(context *global, context *local, lispSymb *symbol){
 		try_find = METHOD(str_obj_p_map, local->map, get, symbol->value);
 
 		if (try_find != NULL){
-			return lispObject_copy_construct(*try_find);
+			return lispObject_borrow(*try_find);
 		}
 	}
 
 	try_find = METHOD(str_obj_p_map, global->map, get, symbol->value);
 
 	if (try_find != NULL){
-		return lispObject_copy_construct(*try_find);
+		return lispObject_borrow(*try_find);
 	}
 
 	fprintf(stderr, "[Evaluating] \033[31mError\033[0m symbol is unbound\n");
@@ -81,22 +84,47 @@ static lispObject* evalSymb(context *global, context *local, lispSymb *symbol){
 
 static lispObject* applyLFunction(context *global, context *local, lispLFunction *func, lispList *list){
 	if (list->list.size != func->args.size + 1){
-		fprintf(stderr, "[Evaluatin] \033[31mError\033[0m Wrong amount of arguments\n");
+		fprintf(stderr, "[Evaluatin] \033[31mError\033[0m Wrong amount of arguments, expected: %zu, got: %zu\n", func->args.size, list->list.size - 1);
 		throughError(list->source);
 		return &ERROR_OBJECT;
 	}
 
-	// TODO: Lookup to the memo
+	bool terminate = false;
 	
 	// Evaluating args
 	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
 	for (size_t i = 0; i < func->args.size; i++){
 		lispObject *buffer = eval(global, local, list->list.arr[i + 1]);
 		if (buffer->type == ERROR_LISP){
-			return &ERROR_OBJECT;
+			terminate = true;
+			break;
 		}
 
 		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	// Lookup to memo
+	bool add_to_memo = false;
+	if (func->memoiz != NULL && !func->dirty){
+		lispObject **try_find = METHOD(memo, *(memo*)func->memoiz, get, evaluated);
+
+		if (try_find == NULL){
+			add_to_memo = true;
+		}
+		else{
+			for (size_t i = 0; i < evaluated.size; i++){
+				lispObject_destruct(evaluated.arr[i]);
+			}
+			DESTRUCT(obj_p_vec, evaluated);
+			return lispObject_borrow(*try_find);
+		}
 	}
 
 	// Save previous bindings of args
@@ -113,9 +141,8 @@ static lispObject* applyLFunction(context *global, context *local, lispLFunction
 	
 	// Binding arguments in function context
 	for (size_t i = 0; i < func->args.size; i++){
-		METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, evaluated.arr[i]);
+		METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, lispObject_borrow(evaluated.arr[i]));
 	}
-	DESTRUCT(obj_p_vec, evaluated);
 	massSetSource(func->body, func->source);
 	lispObject *out = eval(global, (context*)func->ctx, func->body);
 
@@ -137,32 +164,53 @@ static lispObject* applyLFunction(context *global, context *local, lispLFunction
 
 	if (out->type == ERROR_LISP){
 		fprintf(stderr, "when evaluating function\n");
+	}
+
+	if (add_to_memo && out->type != ERROR_LISP){
+		lispObject *value = lispObject_borrow(out);
+		METHOD(memo, *(memo*)func->memoiz, set, evaluated, value);
+	}
+	else{
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
 	}
 
 	return out;
 }
 
 static lispObject* applyCFunction(context *global, context *local, lispCFunction *func, lispList *list){
-	// TODO: Lookup to the memo
-	return func->body(global, local, list);
+	// Memo should be added by author of function
+	return func->body(global, local, func, list);
 }
 
 static lispObject* applyAnonFunction(context *global, context *local, lispAnonFunction *func, lispList *list){
 	if (list->list.size != func->args.size + 1){
-		fprintf(stderr, "[Evaluatin] \033[31mError\033[0m Wrong amount of arguments\n");
+		fprintf(stderr, "[Evaluatin] \033[31mError\033[0m Wrong amount of arguments, expected: %zu, got: %zu\n", func->args.size, list->list.size - 1);
 		throughError(list->source);
 		return &ERROR_OBJECT;
 	}
 
+	bool terminate = false;
+	
 	// Evaluating args
 	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
 	for (size_t i = 0; i < func->args.size; i++){
 		lispObject *buffer = eval(global, local, list->list.arr[i + 1]);
 		if (buffer->type == ERROR_LISP){
-			return &ERROR_OBJECT;
+			terminate = true;
+			break;
 		}
 
 		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
 	}
 
 	// Save previous bindings of args
@@ -179,9 +227,8 @@ static lispObject* applyAnonFunction(context *global, context *local, lispAnonFu
 	
 	// Binding arguments in function context
 	for (size_t i = 0; i < func->args.size; i++){
-		METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, evaluated.arr[i]);
+		METHOD(str_obj_p_map, ((context*)func->ctx)->map, set, func->args.arr[i].value, lispObject_borrow(evaluated.arr[i]));
 	}
-	DESTRUCT(obj_p_vec, evaluated);
 	massSetSource(func->body, func->source);
 	lispObject *out = eval(global, (context*)func->ctx, func->body);
 
@@ -205,12 +252,17 @@ static lispObject* applyAnonFunction(context *global, context *local, lispAnonFu
 		fprintf(stderr, "when evaluating function\n");
 	}
 
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
 	return out;
 }
 
 lispObject* eval(context *global, context *local, lispObject *obj){
 	if (!obj->evalable){
-		return lispObject_copy_construct(obj);
+		return lispObject_borrow(obj);
 	}
 
 	lispObject *out;
@@ -218,10 +270,10 @@ lispObject* eval(context *global, context *local, lispObject *obj){
 		out = evalList(global, local, (lispList*)obj);
 	}
 	else if (obj->type == INT_LISP){
-		out = lispObject_copy_construct(obj);
+		out = lispObject_borrow(obj);
 	}
 	else if (obj->type == STR_LISP){
-		out = lispObject_copy_construct(obj);
+		out = lispObject_borrow(obj);
 	}
 	else if (obj->type == SYMB_LISP){
 		out = evalSymb(global, local, (lispSymb*)obj);
@@ -230,7 +282,7 @@ lispObject* eval(context *global, context *local, lispObject *obj){
 		return &ERROR_OBJECT;
 	}
 	else{
-		return lispObject_copy_construct(obj);
+		return lispObject_borrow(obj);
 	}
 	
 	if (out->type == ERROR_LISP){
@@ -240,4 +292,39 @@ lispObject* eval(context *global, context *local, lispObject *obj){
 	out->source = obj->source;
 
 	return out;
+}
+
+bool check(context *global, context *local, lispObject *obj){
+	if (!obj->evalable){
+		return true;
+	}
+
+	if (obj->type == LIST_LISP){
+		if (!checkList(global, local, (lispList*)obj)){
+			return false;
+		}
+	}
+	else if (obj->type == INT_LISP){
+		return true;
+	}
+	else if (obj->type == STR_LISP){
+		return true;
+	}
+	else if (obj->type == SYMB_LISP){
+		if(!checkSymb(global, local, (lispSymb*)obj)){
+			return false;
+		}
+	}
+	else if (obj->type == ERROR_LISP){
+		return false;
+	}
+	else{
+		return true;
+	}
+	
+	if (out->type == ERROR_LISP){
+		return false;
+	}
+
+	return true;
 }

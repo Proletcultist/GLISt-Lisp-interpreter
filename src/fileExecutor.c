@@ -6,6 +6,29 @@
 #include "lexer.h"
 #include "errorPrinter.h"
 #include "libs.h"
+#include "ASTtools.h"
+
+static void printPosInFile(FILE *file, char *filename, size_t_pair pos){
+	fprintf(stderr, filename);
+	fprintf(stderr, ":");
+
+	size_t init_pos = ftell(file);
+
+	fseek(file, 0, SEEK_SET);
+
+	size_t lineno = 1;
+
+	for (size_t curs_pos = 0; curs_pos < pos.first; curs_pos++){
+		int c = fgetc(file);
+		if (c == '\n'){
+			lineno++;
+		}
+	}
+
+	fprintf(stderr, "%zu", lineno);
+
+	fseek(file, init_pos, SEEK_SET);
+}
 
 void executeFile(context *global, dl_vec *dls, char *filename){
 	FILE *read_stream = fopen(filename, "r");
@@ -25,13 +48,28 @@ void executeFile(context *global, dl_vec *dls, char *filename){
 		node *out = parseExprToAST(l);
 
 		if (isunfinished(*out)){
-			// Print unfinished error
+			fprintf(stderr, "[Parsing] \033[31mError\033[0m Mismatching paranthesis\n");
+
+			fprintf(stderr, "on ");
+			printPosInFile(read_stream, filename, getNonterminalBounds(out));
+			fprintf(stderr, "\n");
+
+			fputc('\n', stderr);
+			printUnfAST(stderr, out, read_stream);
+			fputc('\n', stderr);
+
+			destruct_node_rec(out);
+
 			break;
 		}
 
 		fputc('\n', stdout);
 
 		if (iserror(*out)){
+			fprintf(stderr, "on ");
+			printPosInFile(read_stream, filename, getNonterminalBounds(out));
+			fprintf(stderr, "\n");
+
 			fputc('\n', stderr);
 			printParseErrorAST(stderr, out, read_stream);
 			fputc('\n', stderr);

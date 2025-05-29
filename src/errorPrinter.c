@@ -137,4 +137,102 @@ void printParseErrorAST(FILE *stream, node *AST, FILE *src_stream){
 	fseek(src_stream, curr_pos, SEEK_SET);
 }
 
-void printUnfAST(FILE *stream, node AST);
+static size_t_pair getUnfinishedBounds(node *tree){
+
+	while (1){
+		bool cont = false;
+
+		for (size_t i = 0; i < tree->childs.size; i++){
+			if (isunfinished(*tree->childs.arr[i])){
+				tree = tree->childs.arr[i];
+				cont = true;
+				break;
+			}
+		}
+
+		if (!cont){
+			break;
+		}
+	}
+
+	if (istoken(*tree)){
+		size_t_pair out;
+		out.first = tree->value.token_val.start;
+		out.second = tree->value.token_val.end;
+		return out;
+	}
+	else{
+		return getNonterminalBounds(tree);
+	}
+}
+
+void printUnfAST(FILE *stream, node *AST, FILE *src_stream){
+	size_t_pair whole = getNonterminalBounds(AST);
+	size_t_pair error = getUnfinishedBounds(AST);
+
+	error.second = error.first + 1;
+
+	size_t curr_pos = ftell(src_stream);
+	fseek(src_stream, whole.first, SEEK_SET);
+
+	int32_t brackets_count = 0;
+
+	while (whole.first < error.first){
+		int buffer = fgetc(src_stream);
+		if (buffer == EOF){
+			fputc('\n', stream);
+			return;
+		}
+		else if (buffer == '('){
+			brackets_count++;
+		}
+		else if (buffer == ')'){
+			brackets_count--;
+		}
+
+		fputc(buffer, stream);
+		whole.first++;
+	}
+
+	fprintf(stream, "\033[31;4;1m");
+
+	while (whole.first < error.second){
+		int buffer = fgetc(src_stream);
+		if (buffer == EOF){
+			fputc('\n', stream);
+			return;
+		}
+		else if (buffer == '('){
+			brackets_count++;
+		}
+		else if (buffer == ')'){
+			brackets_count--;
+		}
+
+		fputc(buffer, stream);
+		whole.first++;
+	}
+
+	fprintf(stream, "\033[0m");
+
+	while (whole.first < whole.second){
+		int buffer = fgetc(src_stream);
+		if (buffer == EOF){
+			fputc('\n', stream);
+			return;
+		}
+		else if (buffer == '('){
+			brackets_count++;
+		}
+		else if (buffer == ')'){
+			brackets_count--;
+		}
+
+		fputc(buffer, stream);
+		whole.first++;
+	}
+
+	printTail(stream, src_stream, brackets_count);
+
+	fseek(src_stream, curr_pos, SEEK_SET);
+}

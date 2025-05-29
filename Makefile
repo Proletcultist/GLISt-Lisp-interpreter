@@ -10,8 +10,8 @@ LIBS_DIR = $(BIN_DIR)/libs
 LIBS_INSTALL_DIR = /usr/lib
 BIN_INSTALL_DIR = /usr/bin
 
-C_FLAGS = -I ./headers -I ./templates
-LINK_FLAGS = -rdynamic -Wl,-rpath=$(LIBS_DIR) -ldl
+C_FLAGS = -g -I ./headers -I ./templates
+LINK_FLAGS = -g -rdynamic -Wl,-rpath=$(LIBS_DIR) -ldl
 C_SO_FLAGS = -I ./headers -I ./templates -shared -fPIC
 
 all: libraries main
@@ -27,10 +27,14 @@ $(LIBS_DIR)/%.so: $(LIBS_SRC_DIR)/%.c | $(LIBS_DIR)
 $(OBJECT_FILES_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJECT_FILES_DIR)
 	gcc -c $(C_FLAGS) -o $@ $^
 
+install: all
+	install $(wildcard $(LIBS_DIR)/*.so) $(LIBS_INSTALL_DIR)
+	install -T $(BIN_DIR)/main $(BIN_INSTALL_DIR)/glist
+
 clean:
-	rm $(LIBS_DIR)/*
-	rm -d $(BIN_DIR)/*
-	rm $(OBJECT_FILES_DIR)/*
+	rm -f $(LIBS_DIR)/*
+	rm -df $(BIN_DIR)/*
+	rm -f $(OBJECT_FILES_DIR)/*
 
 $(BIN_DIR):
 	mkdir -p $@

@@ -16,6 +16,22 @@ size_t_pair getNonterminalBounds(node *nt){
 	while (cursor->childs.size != 0){
 		cursor = cursor->childs.arr[cursor->childs.size - 1];
 	}
+
+	if (cursor->type == NONTERMINAL_NODE){
+		cursor = cursor->parent;
+		while (1){
+			if (cursor->childs.size == 1){
+				cursor = cursor->parent;
+				continue;
+			}
+			cursor = cursor->childs.arr[cursor->childs.size - 2];
+			break;
+		}
+		while (cursor->childs.size != 0){
+			cursor = cursor->childs.arr[cursor->childs.size - 1];
+		}
+	}
+
 	out.second = cursor->value.token_val.end;
 
 	return out;

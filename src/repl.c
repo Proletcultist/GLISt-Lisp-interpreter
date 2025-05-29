@@ -18,7 +18,7 @@
 #include "trie.h"
 
 #define STD_LIB_NAME "GLIStSTD.so"
-#define MAX_SUGGESTIONS 2
+#define MAX_SUGGESTIONS 25
 
 int char_compare(char l, char r){ return 0; }
 

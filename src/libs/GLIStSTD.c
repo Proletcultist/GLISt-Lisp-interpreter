@@ -286,6 +286,14 @@ static body_info checkBody(void *global, void *local, lispObject *obj, char *ori
 
 		return out;
 	}
+	else if (obj->type == SYMB_LISP){
+		for (size_t i = 0; i < args.size; i++){
+			if (strcmp(((lispSymb*)obj)->value, ((lispSymb*)args.arr[i])->value) == 0){
+				return (body_info){false, false};
+			}
+		}
+		return (body_info){true, false};
+	}
 	else{
 		return (body_info){false, false};
 	}
@@ -527,7 +535,7 @@ lispObject* progn(void *global, void *local, lispCFunction *func, lispList *args
 
 	lispObject *out = lispObject_borrow(evaluated.arr[evaluated.size - 1]);
 
-	addToMemo(func, evaluated, out);
+		addToMemo(func, evaluated, out);
 
 	for (size_t i = 0; i < evaluated.size; i++){
 		lispObject_destruct(evaluated.arr[i]);
@@ -900,6 +908,792 @@ lispObject* lambda(void *global, void *local, lispCFunction *func, lispList *arg
 	return (lispObject*)out;
 }
 
+lispObject* le(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 3){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 2, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		printf("MEMO =!\n");
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	if (evaluated.arr[0]->type != evaluated.arr[1]->type){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m There is no order on objects with different type\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	if (evaluated.arr[0]->type != STR_LISP && evaluated.arr[0]->type != INT_LISP){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected ints or strings\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispSymb *out = malloc(sizeof(lispSymb));
+	out->type = SYMB_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+
+	if (lispObject_p_compare(evaluated.arr[0], evaluated.arr[1]) == -1){
+		out->value = malloc(2);
+		strcpy(out->value, "T");
+	}
+	else{
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* hi(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 3){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 2, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		printf("MEMO =!\n");
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	if (evaluated.arr[0]->type != evaluated.arr[1]->type){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m There is no order on objects with different type\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	if (evaluated.arr[0]->type != STR_LISP && evaluated.arr[0]->type != INT_LISP){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected ints or strings\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispSymb *out = malloc(sizeof(lispSymb));
+	out->type = SYMB_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+
+	if (lispObject_p_compare(evaluated.arr[0], evaluated.arr[1]) == 1){
+		out->value = malloc(2);
+		strcpy(out->value, "T");
+	}
+	else{
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* leq(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 3){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 2, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		printf("MEMO =!\n");
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	if (evaluated.arr[0]->type != evaluated.arr[1]->type){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m There is no order on objects with different type\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	if (evaluated.arr[0]->type != STR_LISP && evaluated.arr[0]->type != INT_LISP){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected ints or strings\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispSymb *out = malloc(sizeof(lispSymb));
+	out->type = SYMB_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+
+	if (lispObject_p_compare(evaluated.arr[0], evaluated.arr[1]) == 0 || lispObject_p_compare(evaluated.arr[0], evaluated.arr[1]) == -1){
+		out->value = malloc(2);
+		strcpy(out->value, "T");
+	}
+	else{
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* hiq(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 3){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 2, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		printf("MEMO =!\n");
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	if (evaluated.arr[0]->type != evaluated.arr[1]->type){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m There is no order on objects with different type\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	if (evaluated.arr[0]->type != STR_LISP && evaluated.arr[0]->type != INT_LISP){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected ints or strings\n");
+		throughError(evaluated.arr[0]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispSymb *out = malloc(sizeof(lispSymb));
+	out->type = SYMB_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+
+	if (lispObject_p_compare(evaluated.arr[0], evaluated.arr[1]) == 0 || lispObject_p_compare(evaluated.arr[0], evaluated.arr[1]) == 1){
+		out->value = malloc(2);
+		strcpy(out->value, "T");
+	}
+	else{
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* car(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 2){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 1, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *arg = eval((context*)global, (context*)local, args->list.arr[1]);
+	if (arg->type == ERROR_LISP){
+		return &ERROR_OBJECT;
+	}
+
+	if (arg->type != LIST_LISP){
+		fprintf(stderr, "[Evaluating] \033[31Error\033[0m Expected list\n");
+		throughError(arg->source);
+		lispObject_destruct(arg);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+	METHOD(obj_p_vec, evaluated, push, arg);
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	if (((lispList*)arg)->list.size == 0){
+		lispSymb *out = malloc(sizeof(lispSymb));
+		out->type = SYMB_LISP;
+		out->evalable = false;
+		out->ref_counter = 1;
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+
+		addToMemo(func, evaluated, (lispObject*)out);
+
+		lispObject_destruct(arg);
+		DESTRUCT(obj_p_vec, evaluated);
+		return (lispObject*)out;
+	}
+
+	lispObject *out = lispObject_borrow(((lispList*)arg)->list.arr[0]);
+
+	addToMemo(func, evaluated, out);
+
+	lispObject_destruct(arg);
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return out;
+}
+
+lispObject* cdr(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 2){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 1, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *arg = eval((context*)global, (context*)local, args->list.arr[1]);
+	if (arg->type == ERROR_LISP){
+		return &ERROR_OBJECT;
+	}
+
+	if (arg->type != LIST_LISP){
+		fprintf(stderr, "[Evaluating] \033[31Error\033[0m Expected list\n");
+		throughError(arg->source);
+		lispObject_destruct(arg);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+	METHOD(obj_p_vec, evaluated, push, arg);
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	if (((lispList*)arg)->list.size <= 1){
+		lispSymb *out = malloc(sizeof(lispSymb));
+		out->type = SYMB_LISP;
+		out->evalable = false;
+		out->ref_counter = 1;
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+
+		addToMemo(func, evaluated, (lispObject*)out);
+
+		lispObject_destruct(arg);
+		DESTRUCT(obj_p_vec, evaluated);
+		return (lispObject*)out;
+	}
+
+	lispList *out = malloc(sizeof(lispList));
+	out->type = LIST_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+	out->list = CONSTRUCT(obj_p_vec);
+
+	for (size_t i = 1; i < ((lispList*)arg)->list.size; i++){
+		METHOD(obj_p_vec, out->list, push, lispObject_borrow(((lispList*)arg)->list.arr[i]));
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	lispObject_destruct(arg);
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* cons(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 3){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 2, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	if (evaluated.arr[1]->type != LIST_LISP){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected list\n");
+		throughError(evaluated.arr[1]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	lispList *out = malloc(sizeof(lispList));
+	out->type = LIST_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+	out->list = CONSTRUCT(obj_p_vec);
+
+	METHOD(obj_p_vec, out->list, push, lispObject_borrow(evaluated.arr[0]));
+	for (size_t i = 0; i < ((lispList*)evaluated.arr[1])->list.size; i++){
+		METHOD(obj_p_vec, out->list, push, lispObject_borrow(((lispList*)evaluated.arr[1])->list.arr[i]));
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* append(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 3){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 2, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	if (evaluated.arr[1]->type != LIST_LISP){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected list\n");
+		throughError(evaluated.arr[1]->source);
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	lispList *out = malloc(sizeof(lispList));
+	out->type = LIST_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+	out->list = CONSTRUCT(obj_p_vec);
+
+	for (size_t i = 0; i < ((lispList*)evaluated.arr[1])->list.size; i++){
+		METHOD(obj_p_vec, out->list, push, lispObject_borrow(((lispList*)evaluated.arr[1])->list.arr[i]));
+	}
+	METHOD(obj_p_vec, out->list, push, lispObject_borrow(evaluated.arr[0]));
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* and(void *global, void *local, lispCFunction *func, lispList *args){
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+		else if (buffer->type != SYMB_LISP || (strcmp(((lispSymb*)buffer)->value, "NIL") != 0 && strcmp(((lispSymb*)buffer)->value, "T") != 0)){
+			fprintf(stderr, "[Evaluating] \033[31mError\033[0m expected T or NIL symbols\n");
+			throughError(args->list.arr[i]->source);
+			lispObject_destruct(buffer);
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	lispSymb *out = malloc(sizeof(lispSymb));
+	out->type = SYMB_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		if (strcmp(((lispSymb*)evaluated.arr[i])->value, "NIL") == 0){
+			out->value = malloc(4);
+			strcpy(out->value, "NIL");
+			terminate = true;
+			break;
+		}
+	}
+
+	if (!terminate){
+		out->value = malloc(2);
+		strcpy(out->value, "T");
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* or(void *global, void *local, lispCFunction *func, lispList *args){
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+		else if (buffer->type != SYMB_LISP || (strcmp(((lispSymb*)buffer)->value, "NIL") != 0 && strcmp(((lispSymb*)buffer)->value, "T") != 0)){
+			fprintf(stderr, "[Evaluating] \033[31mError\033[0m expected T or NIL symbols\n");
+			throughError(args->list.arr[i]->source);
+			lispObject_destruct(buffer);
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	lispSymb *out = malloc(sizeof(lispSymb));
+	out->type = SYMB_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		if (strcmp(((lispSymb*)evaluated.arr[i])->value, "T") == 0){
+			out->value = malloc(2);
+			strcpy(out->value, "T");
+			terminate = true;
+			break;
+		}
+	}
+
+	if (!terminate){
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
+lispObject* not(void *global, void *local, lispCFunction *func, lispList *args){
+	if (args->list.size != 2){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Wrong amount of arguments, expected: 1, got: %zu\n", args->list.size - 1);
+		throughError(args->source);
+		return &ERROR_OBJECT;
+	}
+
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+		else if (buffer->type != SYMB_LISP || (strcmp(((lispSymb*)buffer)->value, "NIL") != 0 && strcmp(((lispSymb*)buffer)->value, "T") != 0)){
+			fprintf(stderr, "[Evaluating] \033[31mError\033[0m expected T or NIL symbols\n");
+			throughError(args->list.arr[i]->source);
+			lispObject_destruct(buffer);
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	lispObject *lookup = lookupToMemo(func, evaluated);
+	if (lookup != NULL){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return lispObject_borrow(lookup);
+	}
+
+	lispSymb *out = malloc(sizeof(lispSymb));
+	out->type = SYMB_LISP;
+	out->evalable = false;
+	out->ref_counter = 1;
+
+	if (strcmp(((lispSymb*)evaluated.arr[0])->value, "T") == 0){
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+	}
+	else{
+		out->value = malloc(2);
+		strcpy(out->value, "T");
+	}
+
+	addToMemo(func, evaluated, (lispObject*)out);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+
+	return (lispObject*)out;
+}
+
 void loadAllOps(context *ctx){
 	addOperator(ctx, "+", add, false);
 	addOperator(ctx, "-", sub, false);
@@ -914,4 +1708,15 @@ void loadAllOps(context *ctx){
 	addOperator(ctx, "/", divide, false);
 	addOperator(ctx, "LIST", listcr, false);
 	addOperator(ctx, "LAMBDA", lambda, false);
+	addOperator(ctx, "<", le, false);
+	addOperator(ctx, ">", hi, false);
+	addOperator(ctx, "<=", leq, false);
+	addOperator(ctx, ">=", hiq, false);
+	addOperator(ctx, "CAR", car, false);
+	addOperator(ctx, "CDR", cdr, false);
+	addOperator(ctx, "CONS", cons, false);
+	addOperator(ctx, "APPEND", append, false);
+	addOperator(ctx, "AND", and, false);
+	addOperator(ctx, "OR", or, false);
+	addOperator(ctx, "NOT", not, false);
 }

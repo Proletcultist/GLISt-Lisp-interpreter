@@ -22,20 +22,20 @@ int lispObject_p_compare(lispObject *l, lispObject *r){
 		}
 		for (size_t i = 0; i < ((lispList*)l)->list.size; i++){
 			if (lispObject_p_compare(((lispList*)l)->list.arr[i], ((lispList*)r)->list.arr[i]) != 0){
-				return 1;
+				return lispObject_p_compare(((lispList*)l)->list.arr[i], ((lispList*)r)->list.arr[i]);
 			}
 		}
 
 		return 0;
 	}
 	else if (l->type == INT_LISP){
-		return ((lispInt*)l)->value == ((lispInt*)r)->value ? 0 : 1;
+		return ((lispInt*)l)->value == ((lispInt*)r)->value ? 0 : (((lispInt*)l)->value < ((lispInt*)r)->value ? -1 : 1);
 	}
 	else if (l->type == STR_LISP){
-		return strcmp(((lispStr*)l)->value, ((lispStr*)r)->value) == 0 ? 0 : 1;
+		return strcmp(((lispStr*)l)->value, ((lispStr*)r)->value);
 	}
 	else if (l->type == SYMB_LISP){
-		return strcmp(((lispSymb*)l)->value, ((lispSymb*)r)->value) == 0 ? 0 : 1;
+		return strcmp(((lispSymb*)l)->value, ((lispSymb*)r)->value);
 	}
 	else if (l->type == ANON_FUNC_LISP){
 		return lispObject_p_compare(((lispAnonFunction*)l)->body, ((lispAnonFunction*)r)->body) == 0 && COMPARE(symb_vec, ((lispAnonFunction*)l)->args, ((lispAnonFunction*)r)->args) == 0 ? 0 : 1;

@@ -10,8 +10,8 @@ LIBS_DIR = $(BIN_DIR)/libs
 LIBS_INSTALL_DIR = /usr/lib
 BIN_INSTALL_DIR = /usr/bin
 
-C_FLAGS = -g -I ./headers -I ./templates
-LINK_FLAGS = -g -rdynamic -Wl,-rpath=$(LIBS_DIR) -ldl
+C_FLAGS = -I ./headers -I ./templates
+LINK_FLAGS = -rdynamic -Wl,-rpath=$(LIBS_DIR) -ldl
 C_SO_FLAGS = -I ./headers -I ./templates -shared -fPIC
 
 all: libraries main

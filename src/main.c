@@ -16,6 +16,9 @@ static context *global;
 void loadLibAPI(char *name){
 	loadLib(&dls, global, name);
 }
+void executeFileAPI(char *name){
+	executeFile(global, &dls, name);
+}
 
 static void printHelp(){
 	printf("\n");

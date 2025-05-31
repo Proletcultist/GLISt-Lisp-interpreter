@@ -35,7 +35,6 @@ lispObject* add(void *global, void *local, lispCFunction *func, lispList *args){
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO ADD!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -94,7 +93,6 @@ lispObject* sub(void *global, void *local, lispCFunction *func, lispList *args){
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO SUB!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -434,7 +432,6 @@ lispObject* eq(void *global, void *local, lispCFunction *func, lispList *args){
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO =!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -511,7 +508,6 @@ lispObject* progn(void *global, void *local, lispCFunction *func, lispList *args
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO progn!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -715,7 +711,6 @@ lispObject* mult(void *global, void *local, lispCFunction *func, lispList *args)
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO MULT!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -774,7 +769,6 @@ lispObject* divide(void *global, void *local, lispCFunction *func, lispList *arg
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO DIV!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -833,7 +827,6 @@ lispObject* listcr(void *global, void *local, lispCFunction *func, lispList *arg
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO LISTCR!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -938,7 +931,6 @@ lispObject* le(void *global, void *local, lispCFunction *func, lispList *args){
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO =!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -1020,7 +1012,6 @@ lispObject* hi(void *global, void *local, lispCFunction *func, lispList *args){
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO =!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -1102,7 +1093,6 @@ lispObject* leq(void *global, void *local, lispCFunction *func, lispList *args){
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO =!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -1184,7 +1174,6 @@ lispObject* hiq(void *global, void *local, lispCFunction *func, lispList *args){
 
 	lispObject *lookup = lookupToMemo(func, evaluated);
 	if (lookup != NULL){
-		printf("MEMO =!\n");
 		for (size_t i = 0; i < evaluated.size; i++){
 			lispObject_destruct(evaluated.arr[i]);
 		}
@@ -1694,6 +1683,178 @@ lispObject* not(void *global, void *local, lispCFunction *func, lispList *args){
 	return (lispObject*)out;
 }
 
+lispObject* defvar(void *global, void *local, lispCFunction *func, lispList *args){
+
+	obj_p_vec symbols = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		if (args->list.arr[i]->type != SYMB_LISP){
+			fprintf(stderr, "[Evaluating] \033[31mError\033[0m expected symbol\n");
+			throughError(args->list.arr[i]->source);
+			terminate = true;
+			break;
+		}
+
+		lispObject **curr_binding = NULL;
+		if (local != NULL){
+			curr_binding = METHOD(str_obj_p_map, ((context*)local)->map, get, ((lispSymb*)args->list.arr[i])->value);
+		}
+		else{
+			curr_binding = METHOD(str_obj_p_map, ((context*)global)->map, get, ((lispSymb*)args->list.arr[i])->value);
+		}
+
+		if (curr_binding == NULL){
+			// Objects in symbols isn't borrowed, because only string from them is needed
+			METHOD(obj_p_vec, symbols, push, args->list.arr[i]);
+		}
+	}
+
+	if (terminate){
+		// Objects in symbolds isn't destructed, because they're not borrowed
+		DESTRUCT(obj_p_vec, symbols);
+		return &ERROR_OBJECT;
+	}
+
+	for (size_t i = 0; i < symbols.size; i++){
+		lispSymb *out = malloc(sizeof(lispSymb));
+		out->type = SYMB_LISP;
+		out->evalable = false;
+		out->ref_counter = 1;
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+
+		if (local != NULL){
+			bind((context*)local, ((lispSymb*)symbols.arr[i])->value, (lispObject*)out);
+		}
+		else{
+			bind((context*)global, ((lispSymb*)symbols.arr[i])->value, (lispObject*)out);
+		}
+	}
+
+	if (symbols.size == 0){
+		lispSymb *out = malloc(sizeof(lispSymb));
+		out->type = SYMB_LISP;
+		out->evalable = false;
+		out->ref_counter = 1;
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+		DESTRUCT(obj_p_vec, symbols);
+		return (lispObject*)out;
+	}
+
+	lispObject *out = lispObject_borrow(symbols.arr[symbols.size - 1]);
+	DESTRUCT(obj_p_vec, symbols);
+	return out;
+}
+
+lispObject* load(void *global, void *local, lispCFunction *func, lispList *args){
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+		else if (buffer->type != STR_LISP){
+			fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected string\n");
+			lispObject_destruct(buffer);
+			throughError(buffer->source);
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		loadLibAPI(((lispStr*)evaluated.arr[i])->value);
+	}
+
+	if (evaluated.size == 0){
+		lispSymb *out = malloc(sizeof(lispSymb));
+		out->type = SYMB_LISP;
+		out->evalable = false;
+		out->ref_counter = 1;
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+		DESTRUCT(obj_p_vec, evaluated);
+		return (lispObject*)out;
+	}
+
+	lispObject *out = lispObject_borrow(evaluated.arr[evaluated.size - 1]);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+	return out;
+}
+
+lispObject* run(void *global, void *local, lispCFunction *func, lispList *args){
+	obj_p_vec evaluated = CONSTRUCT(obj_p_vec);
+
+	bool terminate = false;
+	for (size_t i = 1; i < args->list.size; i++){
+		lispObject *buffer = eval((context*)global, (context*)local, args->list.arr[i]);
+		if (buffer->type == ERROR_LISP){
+			terminate = true;
+			break;
+		}
+		else if (buffer->type != STR_LISP){
+			fprintf(stderr, "[Evaluating] \033[31mError\033[0m Expected string\n");
+			lispObject_destruct(buffer);
+			throughError(buffer->source);
+			terminate = true;
+			break;
+		}
+
+		METHOD(obj_p_vec, evaluated, push, buffer);
+	}
+
+	if (terminate){
+		for (size_t i = 0; i < evaluated.size; i++){
+			lispObject_destruct(evaluated.arr[i]);
+		}
+		DESTRUCT(obj_p_vec, evaluated);
+		return &ERROR_OBJECT;
+	}
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		executeFileAPI(((lispStr*)evaluated.arr[i])->value);
+	}
+
+	if (evaluated.size == 0){
+		lispSymb *out = malloc(sizeof(lispSymb));
+		out->type = SYMB_LISP;
+		out->evalable = false;
+		out->ref_counter = 1;
+		out->value = malloc(4);
+		strcpy(out->value, "NIL");
+		DESTRUCT(obj_p_vec, evaluated);
+		return (lispObject*)out;
+	}
+
+	lispObject *out = lispObject_borrow(evaluated.arr[evaluated.size - 1]);
+
+	for (size_t i = 0; i < evaluated.size; i++){
+		lispObject_destruct(evaluated.arr[i]);
+	}
+	DESTRUCT(obj_p_vec, evaluated);
+	return out;
+}
+
+
 void loadAllOps(context *ctx){
 	addOperator(ctx, "+", add, false);
 	addOperator(ctx, "-", sub, false);
@@ -1719,4 +1880,7 @@ void loadAllOps(context *ctx){
 	addOperator(ctx, "AND", and, false);
 	addOperator(ctx, "OR", or, false);
 	addOperator(ctx, "NOT", not, false);
+	addOperator(ctx, "DEFVAR", defvar, true);
+	addOperator(ctx, "LOAD", load, true);
+	addOperator(ctx, "RUN", run, true);
 }

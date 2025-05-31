@@ -6,6 +6,8 @@
 #include "lispObject.h"
 #include "ASTtools.h"
 
+#define MAX_DEPTH 1000
+
 static lispObject* evalList(context *global, context *local, lispList *list);
 static lispObject* evalSymb(context *global, context *local, lispSymb *symbol);
 static lispObject* applyLFunction(context *global, context *local, lispLFunction *func, lispList *list);
@@ -83,9 +85,23 @@ static lispObject* evalSymb(context *global, context *local, lispSymb *symbol){
 }
 
 static lispObject* applyLFunction(context *global, context *local, lispLFunction *func, lispList *list){
+	static size_t depth = 0;
+
+	depth++;
+
+	if (depth >= MAX_DEPTH){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Exceeded max depth!\n");
+		throughError(list->source);
+
+		depth--;
+		return &ERROR_OBJECT;
+	}
+
 	if (list->list.size != func->args.size + 1){
 		fprintf(stderr, "[Evaluatin] \033[31mError\033[0m Wrong amount of arguments, expected: %zu, got: %zu\n", func->args.size, list->list.size - 1);
 		throughError(list->source);
+
+		depth--;
 		return &ERROR_OBJECT;
 	}
 
@@ -107,6 +123,7 @@ static lispObject* applyLFunction(context *global, context *local, lispLFunction
 			lispObject_destruct(evaluated.arr[i]);
 		}
 		DESTRUCT(obj_p_vec, evaluated);
+		depth--;
 		return &ERROR_OBJECT;
 	}
 
@@ -123,6 +140,7 @@ static lispObject* applyLFunction(context *global, context *local, lispLFunction
 				lispObject_destruct(evaluated.arr[i]);
 			}
 			DESTRUCT(obj_p_vec, evaluated);
+			depth--;
 			return lispObject_borrow(*try_find);
 		}
 	}
@@ -162,7 +180,7 @@ static lispObject* applyLFunction(context *global, context *local, lispLFunction
 	}
 	DESTRUCT(obj_p_vec, olds);
 
-	if (out->type == ERROR_LISP){
+	if (out->type == ERROR_LISP && depth == 1){
 		fprintf(stderr, "when evaluating function\n");
 	}
 
@@ -177,6 +195,7 @@ static lispObject* applyLFunction(context *global, context *local, lispLFunction
 		DESTRUCT(obj_p_vec, evaluated);
 	}
 
+	depth--;
 	return out;
 }
 
@@ -186,9 +205,22 @@ static lispObject* applyCFunction(context *global, context *local, lispCFunction
 }
 
 static lispObject* applyAnonFunction(context *global, context *local, lispAnonFunction *func, lispList *list){
+	static size_t depth = 0;
+
+	depth++;
+
+	if (depth >= MAX_DEPTH){
+		fprintf(stderr, "[Evaluating] \033[31mError\033[0m Exceeded max depth!\n");
+		throughError(list->source);
+
+		depth--;
+		return &ERROR_OBJECT;
+	}
+
 	if (list->list.size != func->args.size + 1){
 		fprintf(stderr, "[Evaluatin] \033[31mError\033[0m Wrong amount of arguments, expected: %zu, got: %zu\n", func->args.size, list->list.size - 1);
 		throughError(list->source);
+		depth--;
 		return &ERROR_OBJECT;
 	}
 
@@ -210,6 +242,7 @@ static lispObject* applyAnonFunction(context *global, context *local, lispAnonFu
 			lispObject_destruct(evaluated.arr[i]);
 		}
 		DESTRUCT(obj_p_vec, evaluated);
+		depth--;
 		return &ERROR_OBJECT;
 	}
 
@@ -257,6 +290,7 @@ static lispObject* applyAnonFunction(context *global, context *local, lispAnonFu
 	}
 	DESTRUCT(obj_p_vec, evaluated);
 
+	depth--;
 	return out;
 }
 

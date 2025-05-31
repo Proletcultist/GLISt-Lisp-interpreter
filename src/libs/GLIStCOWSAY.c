@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "interpreterAPI.h"
 
@@ -68,6 +69,8 @@ lispObject* cowsay(void *global, void *local, lispCFunction *func, lispList *arg
 
 	printbubble(str);
 	printcow();
+
+	free(str);
 
 	return theOnlyOneArg;
 }

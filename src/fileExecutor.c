@@ -48,7 +48,7 @@ void executeFile(context *global, dl_vec *dls, char *filename){
 		node *out = parseExprToAST(l);
 
 		if (isunfinished(*out)){
-			fprintf(stderr, "[Parsing] \033[31mError\033[0m Mismatching paranthesis\n");
+			fprintf(stderr, "\n[Parsing] \033[31mError\033[0m Mismatching paranthesis\n");
 
 			fprintf(stderr, "on ");
 			printPosInFile(read_stream, filename, getNonterminalBounds(out));

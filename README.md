@@ -1,3 +1,5 @@
-# GLISt - Great Lisp Interpreter Stable
+# GLISt - Great Lisp Interpreter (St)
 
-A LISP interpreter, that's all
+Interpreter for LISP. To see info about options, type `glist --help`.
+
+If you pass any file to interpreter, it will interprete it and exit, otherwise - REPL will be executed.

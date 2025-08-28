@@ -755,6 +755,13 @@ lispObject* divide(void *global, void *local, lispCFunction *func, lispList *arg
 			terminate = true;
 			break;
 		}
+		else if (i > 1 && ((lispInt*)buffer)->value == 0){
+			fprintf(stderr, "[Evaluating] \033[31mError\033[0m division by zero\n");
+			throughError(args->list.arr[i]->source);
+			lispObject_destruct(buffer);
+			terminate = true;
+			break;
+		}
 
 		METHOD(obj_p_vec, evaluated, push, buffer);
 	}
